@@ -1,19 +1,21 @@
 <script lang="ts">
 	import { gpsimuStore } from '$lib/ros/nodes/GPSIMU';
 
-	let lat = $gpsimuStore ? $gpsimuStore.latitude : 0;
-	let lng = $gpsimuStore ? $gpsimuStore.longitude : 0;
-	let pitch = $gpsimuStore ? $gpsimuStore.pitch : 0;
-	let roll = $gpsimuStore ? $gpsimuStore.roll : 0;
-	let yaw = $gpsimuStore ? $gpsimuStore.yaw : 0;
+	$: lat = $gpsimuStore ? $gpsimuStore.latitude : 0;
+	$: lng = $gpsimuStore ? $gpsimuStore.longitude : 0;
+	$: pitch = $gpsimuStore ? $gpsimuStore.pitch : 0;
+	$: roll = $gpsimuStore ? $gpsimuStore.roll : 0;
+	$: yaw = $gpsimuStore ? $gpsimuStore.yaw : 0;
+
+	$: console.log($gpsimuStore);
 </script>
 
 <div id="background">
 	<p>Lat: {lat.toFixed(4)}</p>
 	<p>Lng: {lng.toFixed(4)}</p>
-	<p>Pitch: {lng.toFixed(2)}</p>
-	<p>Roll: {lng.toFixed(2)}</p>
-	<p>Yaw: {lng.toFixed(2)}</p>
+	<p>Pitch: {pitch.toFixed(2)}</p>
+	<p>Roll: {roll.toFixed(2)}</p>
+	<p>Yaw: {yaw.toFixed(2)}</p>
 </div>
 
 <style>

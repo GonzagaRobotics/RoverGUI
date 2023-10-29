@@ -40,8 +40,15 @@ export function rosTopicReadStore<T>(
 	// Create a new store that handles the loading state
 	const { subscribe } = writable<T | undefined>(undefined, (set) => {
 		const unsubscribe = internal.subscribe((val) => {
+			if (verbose) {
+				console.log('Received data from internal store:');
+				console.log(val);
+			}
+
 			// If we are still loading, return undefined
 			if (val.loading) {
+				if (verbose) console.log('Still loading, returning undefined');
+
 				set(undefined);
 				return;
 			}
@@ -107,7 +114,8 @@ function rosTopicReadStoreInternal<T>(
 				subscriber.subscribe((message) => {
 					// Update the store
 					update((prevData) => {
-						const newData = { ...prevData, [key]: message };
+						// eslint-disable-next-line @typescript-eslint/no-explicit-any
+						const newData = { ...prevData, data: { ...prevData.data, [key]: (message as any).data } };
 
 						// If we already finished loading, don't update the loading state
 						if (newData.loading == false) return newData;

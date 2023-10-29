@@ -12,12 +12,12 @@ export type GPSIMU = {
 };
 
 export const GPSIMUMapping: TopicMapping<GPSIMU> = {
-	latitude: { name: '/gps/lat', type: 'std_msgs/Float32' },
-	longitude: { name: '/gps/lng', type: 'std_msgs/Float32' },
-	pitch: { name: '/imu/pitch', type: 'std_msgs/Float32' },
-	roll: { name: '/imu/roll', type: 'std_msgs/Float32' },
-	yaw: { name: '/imu/yaw', type: 'std_msgs/Float32' },
-	heading: { name: '/mag/z', type: 'std_msgs/Float32' }
+	latitude: { name: 'gps/lat', type: 'std_msgs/Float32' },
+	longitude: { name: 'gps/lng', type: 'std_msgs/Float32' },
+	pitch: { name: 'imu/pitch', type: 'std_msgs/Float32' },
+	roll: { name: 'imu/roll', type: 'std_msgs/Float32' },
+	yaw: { name: 'imu/yaw', type: 'std_msgs/Float32' },
+	heading: { name: 'mag/z', type: 'std_msgs/Float32' }
 };
 
 const loadingData: GPSIMU = {
@@ -31,4 +31,4 @@ const loadingData: GPSIMU = {
 
 export const gpsimuStore = clientConfig.preview
 	? null
-	: rosTopicReadStore(ros!, 'gps_imu_pub', GPSIMUMapping, loadingData);
+	: rosTopicReadStore(ros!, 'gps_imu_pub', GPSIMUMapping, loadingData, true);

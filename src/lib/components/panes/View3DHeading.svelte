@@ -8,7 +8,7 @@
 	// Cardinal directions in degrees
 	const cardinalDirs = { N: 0, NE: 45, E: 90, SE: 135, S: 180, SW: 225, W: 270, NW: 315 };
 
-	let heading = $gpsimuStore ? $gpsimuStore.heading : 0;
+	$: heading = $gpsimuStore ? $gpsimuStore.heading : 0;
 
 	// A list of cardinal directions that are visible, and their relative angle to the current heading in degrees
 	$: visibleCardinalDirs = Object.entries(cardinalDirs)

@@ -3,8 +3,8 @@ import { writable } from 'svelte/store';
 import { type ClientConfig, type ClientState, ClientConnectionStatus } from './ClientTypes';
 
 export const clientConfig: ClientConfig = {
-	preview: true,
-	rosbridgeUrl: ''
+	preview: false,
+	rosbridgeUrl: 'ws://localhost:9090'
 };
 
 export const clientState = writable<ClientState>({
