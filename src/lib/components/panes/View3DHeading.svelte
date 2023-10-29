@@ -93,13 +93,13 @@
 
 		text-align: center;
 		color: var(--color-accent);
-		-webkit-text-stroke: 1px black;
 	}
 
 	h3#current {
 		z-index: 3;
 		left: 50%;
 		translate: -50% 0%;
+		-webkit-text-stroke: 1px black;
 	}
 
 	h4#cardinal {
