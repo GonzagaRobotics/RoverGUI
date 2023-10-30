@@ -31,4 +31,4 @@ const loadingData: GPSIMU = {
 
 export const gpsimuStore = clientConfig.preview
 	? null
-	: rosTopicReadStore(ros!, 'gps_imu_pub', GPSIMUMapping, loadingData, true);
+	: rosTopicReadStore(ros!, '', GPSIMUMapping, loadingData, true);
