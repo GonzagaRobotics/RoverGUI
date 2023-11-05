@@ -1,5 +1,11 @@
 <script lang="ts">
+	import { createEventDispatcher } from 'svelte';
+
 	export let checked = false;
+
+	const dispatch = createEventDispatcher();
+
+	$: dispatch('checked', checked);
 </script>
 
 <label>

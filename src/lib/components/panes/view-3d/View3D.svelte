@@ -19,54 +19,21 @@
 	});
 </script>
 
-<div id="container">
-	<h2>3D View</h2>
-	<div id="main">
-		<div>
-			<View3DHeading />
-			<View3DInfo />
-		</div>
-		<canvas bind:this={rendererCanvas} />
-	</div>
+<div>
+	<View3DHeading />
+	<View3DInfo />
 </div>
+<canvas bind:this={rendererCanvas} />
 
 <style>
-	div#container {
-		box-sizing: border-box;
-
-		height: 100%;
-		width: 100%;
-
-		grid-column: var(--s-pane-column-start) / var(--s-pane-column-end);
-		grid-row: var(--s-pane-row-start) / var(--s-pane-row-end);
-
-		display: flex;
-		align-items: center;
-		flex-direction: column;
-
-		border: 2px solid var(--color-secondary-dark);
-	}
-
-	h2 {
-		margin: 0;
-	}
-
-	div#main {
-		position: relative;
-		box-sizing: border-box;
-
-		width: 100%;
-		height: 100%;
-	}
-
-	div#main canvas {
+	canvas {
 		position: absolute;
 
 		width: 100%;
 		height: 100%;
 	}
 
-	div#main div {
+	div {
 		position: absolute;
 
 		width: 100%;

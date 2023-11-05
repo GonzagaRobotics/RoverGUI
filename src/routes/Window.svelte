@@ -1,28 +1,23 @@
 <script lang="ts">
-	import type { AppLayout } from '$lib/AppLayoutParser';
+	import type { Tab, WindowLayout } from '$lib/WindowLayoutParser';
 	import Icon from '$lib/components/Icon.svelte';
-	import View3D from '$lib/components/panes/View3D.svelte';
+	import Pane from '$lib/components/panes/Pane.svelte';
 
-	export let layoutData: AppLayout;
-	export let selectedTabId: string;
-
-	$: selectedTabObj = layoutData.tabs.find((tab) => tab.uuid == selectedTabId)!;
+	export let layoutData: WindowLayout;
+	export let selectedTab: Tab | undefined = undefined;
 </script>
 
 <main>
-	{#if selectedTabId != ''}
-		<!-- I really don't like this repetitive code. Really, I want this to be fairly automatic. -->
-		{#each selectedTabObj.panes as pane}
-			{#if pane.uuid == 'view-3d'}
-				<View3D
-					--s-pane-column-start={pane.start.x}
-					--s-pane-column-end={pane.start.x + pane.size.width}
-					--s-pane-row-start={pane.start.y}
-					--s-pane-row-end={pane.start.y + pane.size.height}
-				/>
-			{:else}
-				<div>Pane type not supported</div>
-			{/if}
+	{#if selectedTab}
+		{#each selectedTab.panes as pane}
+			<Pane
+				uuid={pane.uuid}
+				name={layoutData.panes.find((p) => p.uuid == pane.uuid)?.name ?? 'Unknown'}
+				--s-pane-column-start={pane.start.x}
+				--s-pane-column-end={pane.start.x + pane.size.x}
+				--s-pane-row-start={pane.start.y}
+				--s-pane-row-end={pane.start.y + pane.size.y}
+			/>
 		{/each}
 	{:else}
 		<div id="no-tab-selected">

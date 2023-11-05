@@ -30,8 +30,9 @@
 
 	--border-size-base: 2px;
 	--border-radius-base: 4px;
+	--border-radius-large: 8px;
 
-	--transition-base: all 0.15s ease-in-out;
+	--transition-base: all 0.2s ease-in-out;
 	--transition-fast: all 0.1s ease-in-out;
 
 	--navbar-height: 10vh;
@@ -46,32 +47,45 @@ body {
 	background: var(--color-background);
 }
 
-h1 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+span {
 	margin: 0;
+}
+
+h1 {
 	font-size: var(--font-size-title);
+	font-weight: 700;
 }
 
 h2 {
-	margin: 0;
 	font-size: var(--font-size-large);
+	font-weight: 700;
 }
 
 h3 {
-	margin: 0;
 	font-size: var(--font-size-medium);
+	font-weight: 600;
 }
 
-h4 {
-	margin: 0;
+h4,
+h5,
+h6 {
 	font-size: var(--font-size-base);
+	font-weight: 500;
 }
 
 p,
 span {
-	margin: 0;
 	font-size: var(--font-size-base);
+	font-weight: 400;
 }
 
-.text-small {
+.small-text {
 	font-size: var(--font-size-small);
 }

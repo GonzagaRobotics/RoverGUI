@@ -1,25 +1,47 @@
 <script lang="ts">
 	import '../styles/app.css';
-	import Navbar from './Navbar.svelte';
-	import { AppLayoutParser, type AppLayout } from '$lib/AppLayoutParser';
+	import Navbar from './navbar/Navbar.svelte';
+	import { WindowLayoutParser, type WindowLayout, type Tab } from '$lib/WindowLayoutParser';
 	import { onMount } from 'svelte';
 	import Window from './Window.svelte';
+	import Settings from './settings/Settings.svelte';
+	import { disposeGamepadManager } from '$lib/GamepadManager';
 
-	let layoutData: AppLayout = { panes: [], tabs: [] };
-	let selectedTabId: string = '';
+	let layoutData: WindowLayout | undefined = undefined;
+	let selectedTab: Tab | undefined = undefined;
 
-	function handleTabChange(e: CustomEvent<any>) {
-		selectedTabId = e.detail;
+	let showSettings = false;
+
+	function handleTabChange(e: any) {
+		const tabId = e.detail;
+		selectedTab = layoutData?.tabs.find((tab) => tab.uuid == tabId);
 	}
 
-	onMount(async () => {
-		const layoutRes = await fetch('/layout-data.json');
+	async function loadWindowLayout() {
+		const layoutRes = await fetch('/window-layout-data.json');
 
-		layoutData = AppLayoutParser.parse(await layoutRes.text());
+		layoutData = WindowLayoutParser.parse(await layoutRes.text());
 
-		selectedTabId = layoutData.tabs.length == 0 ? '' : layoutData.tabs[0].uuid;
+		selectedTab = layoutData.tabs.length == 0 ? undefined : layoutData.tabs[0];
+	}
+
+	onMount(() => {
+		loadWindowLayout();
+
+		return () => {
+			disposeGamepadManager();
+		};
 	});
 </script>
 
-<Navbar {layoutData} selectedTab={selectedTabId} on:click={handleTabChange} />
-<Window {layoutData} {selectedTabId} />
+<Settings bind:showSettings />
+
+{#if layoutData}
+	<Navbar
+		{layoutData}
+		selectedTabId={selectedTab?.uuid}
+		on:click={handleTabChange}
+		on:open-settings={() => (showSettings = true)}
+	/>
+	<Window {layoutData} {selectedTab} />
+{/if}

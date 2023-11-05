@@ -1,13 +1,11 @@
 <script lang="ts">
-	import { gpsimuStore } from '$lib/ros/nodes/GPSIMU';
+	import { gpsimuStore } from '$lib/ros/GPSIMU';
 
 	$: lat = $gpsimuStore ? $gpsimuStore.latitude : 0;
 	$: lng = $gpsimuStore ? $gpsimuStore.longitude : 0;
 	$: pitch = $gpsimuStore ? $gpsimuStore.pitch : 0;
 	$: roll = $gpsimuStore ? $gpsimuStore.roll : 0;
 	$: yaw = $gpsimuStore ? $gpsimuStore.yaw : 0;
-
-	$: console.log($gpsimuStore);
 </script>
 
 <div id="background">

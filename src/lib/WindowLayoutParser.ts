@@ -1,33 +1,34 @@
-export type PaneUUID = 'view-3d';
+import { debug } from './Logger';
 
 export type Pane = {
-	// TODO: Alongside deciding which svelte component to use, I would really like this to be dynamic
-	uuid: PaneUUID;
+	uuid: string;
 	name: string;
+};
+
+export type PaneLayout = {
+	uuid: string;
+	start: { x: number; y: number };
+	size: { x: number; y: number };
 };
 
 export type Tab = {
 	uuid: string;
 	name: string;
-	panes: {
-		uuid: PaneUUID;
-		start: { x: number; y: number };
-		size: { width: number; height: number };
-	}[];
+	panes: PaneLayout[];
 };
 
-export type AppLayout = {
+export type WindowLayout = {
 	panes: Pane[];
 	tabs: Tab[];
 };
 
-export class AppLayoutParser {
+export class WindowLayoutParser {
 	/**
-	 * Parses the given data into an AppLayout object.
+	 * Parses the given data into an WindowLayout object.
 	 *
 	 * @param data A JSON string containing the layout data.
 	 */
-	static parse(data: string): AppLayout {
+	static parse(data: string): WindowLayout {
 		// Convert string to object
 		const jsonObj = JSON.parse(data);
 
@@ -42,7 +43,7 @@ export class AppLayoutParser {
 			const paneObj = paneLookup[paneId];
 
 			panes.push({
-				uuid: paneId as PaneUUID,
+				uuid: paneId,
 				name: paneObj.name
 			});
 		}
@@ -53,27 +54,14 @@ export class AppLayoutParser {
 		for (const tabId in tabLookup) {
 			const tabObj = tabLookup[tabId];
 
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			const panes = tabObj.panes.map((p: any) => {
-				return {
-					uuid: p.uuid,
-					start: {
-						x: Number(p.start.x),
-						y: Number(p.start.y)
-					},
-					size: {
-						width: Number(p.size.width),
-						height: Number(p.size.height)
-					}
-				};
-			});
-
 			tabs.push({
 				uuid: tabId,
 				name: tabObj.name,
-				panes: panes
+				panes: tabObj.panes.map((p: unknown) => p as PaneLayout)
 			});
 		}
+
+		debug('WindowLayoutParser', 'Parsed window layout', panes, tabs);
 
 		return {
 			panes: panes,

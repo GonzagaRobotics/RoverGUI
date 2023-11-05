@@ -1,6 +1,8 @@
 import { Topic, type Ros } from 'roslib';
 import { writable } from 'svelte/store';
 import type { TopicMapping } from './TopicMapping';
+import { PUBLIC_ALLOW_PARTIAL_DATA } from '$env/static/public';
+import { debug } from './Logger';
 
 /** Generic data combined with a loading state. */
 export type TopicStoreData<T> = {
@@ -17,15 +19,13 @@ export type TopicStoreData<T> = {
  * @param nodeName The name of the node to subscribe to topics from.
  * @param mapping The TopicMapping to use for subscribing to topics.
  * @param loadingData Dummy data to be replaced while the topics are loading.
- * @param verbose Whether to log debug messages.
  * @returns The store.
  */
 export function rosTopicReadStore<T>(
 	ros: Ros,
 	nodeName: string,
 	mapping: TopicMapping<T>,
-	loadingData: T,
-	verbose = false
+	loadingData: T
 ) {
 	/*
 	 * Now, we need to handle the loading state, and return undefined when the
@@ -35,20 +35,19 @@ export function rosTopicReadStore<T>(
 	 */
 
 	// Create the internal store
-	const internal = rosTopicReadStoreInternal(ros, nodeName, mapping, loadingData, verbose);
+	const internal = rosTopicReadStoreInternal(ros, nodeName, mapping, loadingData);
 
 	// Create a new store that handles the loading state
 	const { subscribe } = writable<T | undefined>(undefined, (set) => {
 		const unsubscribe = internal.subscribe((val) => {
-			if (verbose) {
-				console.log('Received data from internal store:');
-				console.log(val);
+			// If partial data is allowed, return the data
+			if (PUBLIC_ALLOW_PARTIAL_DATA == 'true') {
+				set(val.data);
+				return;
 			}
 
 			// If we are still loading, return undefined
 			if (val.loading) {
-				if (verbose) console.log('Still loading, returning undefined');
-
 				set(undefined);
 				return;
 			}
@@ -76,15 +75,13 @@ export function rosTopicReadStore<T>(
  * @param nodeName The name of the node to subscribe to topics from.
  * @param mapping The TopicMapping to use for subscribing to topics.
  * @param loadingData Dummy data to be replaced while the topics are loading.
- * @param verbose Whether to log debug messages.
  * @returns The store.
  */
 function rosTopicReadStoreInternal<T>(
 	ros: Ros,
 	nodeName: string,
 	mapping: TopicMapping<T>,
-	loadingData: T,
-	verbose = false
+	loadingData: T
 ) {
 	// The topics we have received data from
 	const receivedTopics = new Set<string>();
@@ -96,13 +93,15 @@ function rosTopicReadStoreInternal<T>(
 	const { subscribe } = writable<TopicStoreData<T>>(
 		{ data: loadingData, loading: true },
 		(_, update) => {
-			if (verbose) console.log(`Subscribing to topics from node ${nodeName}...`);
+			// logger.debug('TopicStore', `Subscribing to topics from node ${nodeName}...`);
 
 			Object.keys(mapping).forEach((key) => {
 				const topicMapping = mapping[key as keyof T];
 
-				if (verbose)
-					console.log(`Subscribing to topic ${topicMapping.name}, type: ${topicMapping.type}`);
+				debug(
+					'TopicStore',
+					`Subscribing to topic ${topicMapping.name}, type: ${topicMapping.type}`
+				);
 
 				// Subscribe to the topic
 				const subscriber = new Topic({
@@ -114,8 +113,11 @@ function rosTopicReadStoreInternal<T>(
 				subscriber.subscribe((message) => {
 					// Update the store
 					update((prevData) => {
-						// eslint-disable-next-line @typescript-eslint/no-explicit-any
-						const newData = { ...prevData, data: { ...prevData.data, [key]: (message as any).data } };
+						const newData = {
+							...prevData,
+							// eslint-disable-next-line @typescript-eslint/no-explicit-any
+							data: { ...prevData.data, [key]: topicMapping.transform(message as any) }
+						};
 
 						// If we already finished loading, don't update the loading state
 						if (newData.loading == false) return newData;
@@ -123,14 +125,14 @@ function rosTopicReadStoreInternal<T>(
 						// Add the topic to the set of received topics
 						receivedTopics.add(key);
 
-						if (verbose) console.log(`Received data from topic ${topicMapping.name}`);
+						debug('TopicStore', `Received first data from topic ${topicMapping.name}`);
 
 						// Check if we have received data from all topics
 						const allReceived = Object.keys(mapping).every((topicKey) =>
 							receivedTopics.has(topicKey)
 						);
 
-						if (verbose && allReceived) console.log('Received data from all topics');
+						if (allReceived) debug('TopicStore', 'Received data from all topics');
 
 						return {
 							data: newData.data,
@@ -145,7 +147,7 @@ function rosTopicReadStoreInternal<T>(
 
 			// Return a cleanup function
 			return () => {
-				if (verbose) console.log(`Unsubscribing from topics from node ${nodeName}...`);
+				debug('TopicStore', `Unsubscribing from topics from node ${nodeName}...`);
 
 				unsubscribers.forEach((unsub) => unsub());
 			};
