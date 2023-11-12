@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { ClientConnectionStatus } from '$lib/Client';
-	import { clientState } from '$lib/Client';
+	import { ClientConnectionStatus } from '$lib/data/Client';
+	import { clientState } from '$lib/data/Client';
 	import Icon from '$lib/components/Icon.svelte';
 </script>
 

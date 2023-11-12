@@ -2,6 +2,7 @@
 
 :root {
 	--color-background: rgb(15, 22, 31);
+	--color-background-light: rgb(36, 48, 62);
 	--color-text: aliceblue;
 	--color-accent: rgb(245, 122, 0);
 	--color-accent-dark: rgb(185, 100, 20);
@@ -88,4 +89,20 @@ span {
 
 .small-text {
 	font-size: var(--font-size-small);
+}
+
+.skeleton-loading {
+	animation: skeleton-loading 2s infinite ease-in-out;
+}
+
+@keyframes skeleton-loading {
+	0% {
+		background-color: var(--color-background);
+	}
+	50% {
+		background-color: var(--color-background-light);
+	}
+	100% {
+		background-color: var(--color-background);
+	}
 }

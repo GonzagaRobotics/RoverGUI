@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { gpsimuStore } from '$lib/ros/GPSIMU';
+	import { gpsimuStore } from '$lib/data/ros/GPSIMU';
 
 	$: lat = $gpsimuStore ? $gpsimuStore.latitude : 0;
 	$: lng = $gpsimuStore ? $gpsimuStore.longitude : 0;

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Tab, WindowLayout } from '$lib/WindowLayoutParser';
+	import type { Tab, WindowLayout } from '$lib/data/WindowLayoutParser';
 	import Icon from '$lib/components/Icon.svelte';
 	import Pane from '$lib/components/panes/Pane.svelte';
 

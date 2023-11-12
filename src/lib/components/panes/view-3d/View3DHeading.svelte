@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { clientConfig } from '$lib/Client';
-	import { gpsimuStore } from '$lib/ros/GPSIMU';
+	import { clientConfig } from '$lib/data/Client';
+	import { gpsimuStore } from '$lib/data/ros/GPSIMU';
 	import { onMount } from 'svelte';
 
 	// Total angle of view in degrees

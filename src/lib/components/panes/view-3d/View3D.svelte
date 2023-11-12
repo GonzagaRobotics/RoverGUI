@@ -3,9 +3,13 @@
 	import { View3DInternal } from './View3DInternal';
 	import View3DHeading from './View3DHeading.svelte';
 	import View3DInfo from './View3DInfo.svelte';
+	import { gpsimuStore } from '$lib/data/ros/GPSIMU';
+	import { clientConfig } from '$lib/data/Client';
 
 	let rendererCanvas: HTMLCanvasElement;
 	let internal: View3DInternal;
+
+	$: loading = clientConfig.preview == false && $gpsimuStore == undefined;
 
 	onMount(() => {
 		rendererCanvas.width = rendererCanvas.clientWidth;
@@ -19,11 +23,13 @@
 	});
 </script>
 
-<div>
-	<View3DHeading />
-	<View3DInfo />
+<div class:skeleton-loading={loading}>
+	{#if loading == false}
+		<View3DHeading />
+		<View3DInfo />
+	{/if}
 </div>
-<canvas bind:this={rendererCanvas} />
+<canvas bind:this={rendererCanvas} style:visibility={loading ? 'hidden' : 'inherit'} />
 
 <style>
 	canvas {

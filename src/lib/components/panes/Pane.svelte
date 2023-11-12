@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Console from './console/Console.svelte';
+	import Motors from './motors/Motors.svelte';
 	import View3D from './view-3d/View3D.svelte';
 
 	export let uuid: string;
@@ -14,6 +15,8 @@
 			<View3D />
 		{:else if uuid == 'console'}
 			<Console />
+		{:else if uuid == 'motors'}
+			<Motors />
 		{:else}
 			<div>Pane type not supported</div>
 		{/if}

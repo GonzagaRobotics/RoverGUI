@@ -1,14 +1,26 @@
-import { PUBLIC_PREIVEW_CLIENT, PUBLIC_ROSBRIDGE_URL } from '$env/static/public';
+import {
+	PUBLIC_PREIVEW_CLIENT,
+	PUBLIC_ROSBRIDGE_URL,
+	PUBLIC_ALLOW_PARTIAL_DATA,
+	PUBLIC_AUTO_PRIMARY_GAMEPAD
+} from '$env/static/public';
 import { Ros } from 'roslib';
 import { writable } from 'svelte/store';
 import { log, warn, error } from './Logger';
 
 /** Settings for the client. */
 export type ClientConfig = {
-	/** Whether to preview the client, which won't cause attempt any connection to the rover. */
+	/** Whether the client should be in preview mode, this disables rosbridge and uses mock data and behavior. */
 	preview: boolean;
-	/** The URL of the rosbridge server. */
+	/** The URL of the rosbridge server. If the client is in preview mode, this is not used. */
 	rosbridgeUrl: string;
+	/**
+	 * If true, the client will wait for all topics in a client datatype to be received before
+	 * loading is considered complete. If false, the datatype will load immediately with the loading data.
+	 */
+	allowPartialData: boolean;
+	/** If true, the most recent gamepad connected will be used as the primary gamepad. */
+	autoPrimaryGamepad: boolean;
 };
 
 /** The current status of the connection between Client and Rosbridge. */
@@ -34,7 +46,9 @@ export type ClientState = {
 /** The config loaded. */
 export const clientConfig: ClientConfig = {
 	preview: PUBLIC_PREIVEW_CLIENT == 'true',
-	rosbridgeUrl: PUBLIC_ROSBRIDGE_URL
+	rosbridgeUrl: PUBLIC_ROSBRIDGE_URL,
+	allowPartialData: PUBLIC_ALLOW_PARTIAL_DATA == 'true',
+	autoPrimaryGamepad: PUBLIC_AUTO_PRIMARY_GAMEPAD == 'true'
 };
 
 /** The current state of the client. */

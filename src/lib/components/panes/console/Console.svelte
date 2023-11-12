@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { logs, type LogLevel, type Log } from '$lib/Logger';
+	import { logs, type LogLevel, type Log } from '$lib/data/Logger';
 
 	const debugMarker = String.fromCodePoint(0x1f50d);
 	const infoMarker = String.fromCodePoint(0x2139) + String.fromCodePoint(0xfe0f);

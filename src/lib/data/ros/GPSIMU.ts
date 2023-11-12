@@ -1,6 +1,6 @@
-import { simpleTopicTransform, type TopicMapping } from '$lib/TopicMapping';
-import { clientConfig, ros } from '$lib/Client';
-import { rosTopicReadStore } from '$lib/TopicStore';
+import { simpleTopicTransform, type TopicMapping } from '$lib/data/TopicMapping';
+import { clientConfig, ros } from '$lib/data/Client';
+import { rosTopicReadStore } from '$lib/data/TopicStore';
 
 export type GPSIMU = {
 	latitude: number;

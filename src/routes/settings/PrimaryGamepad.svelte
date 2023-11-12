@@ -1,40 +1,56 @@
 <script lang="ts">
-	import { allowNewPrimaryGamepad, clearPrimaryGamepad, primaryGamepad } from '$lib/GamepadManager';
+	import { clientConfig } from '$lib/data/Client';
+	import {
+		allowNewPrimaryGamepad,
+		getPrimaryGamepad,
+		resetPrimaryGamepad
+	} from '$lib/data/GamepadManager';
 
 	function onClick() {
 		$allowNewPrimaryGamepad = !$allowNewPrimaryGamepad;
 	}
 
-	function onClear() {
-		clearPrimaryGamepad();
+	function onReset() {
+		resetPrimaryGamepad();
 	}
 </script>
 
 <li>
 	<div id="container">
-		<h4>
-			{#if $allowNewPrimaryGamepad}
-				Hold LT and RT on the new primary gamepad
-			{:else}
-				Primary Gamepad:
-				{#if $primaryGamepad}
-					{$primaryGamepad.id} {$primaryGamepad.index}
+		{#if clientConfig.autoPrimaryGamepad == false}
+			<h4>
+				{#if $allowNewPrimaryGamepad}
+					Hold LT and RT on the new primary gamepad
+				{:else}
+					Primary Gamepad:
+					{#if $getPrimaryGamepad}
+						{$getPrimaryGamepad.id} {$getPrimaryGamepad.index}
+					{:else}
+						None
+					{/if}
+				{/if}
+			</h4>
+
+			<button on:click={onClick}>
+				{#if $allowNewPrimaryGamepad}
+					Cancel
+				{:else}
+					Set
+				{/if}
+			</button>
+
+			{#if $getPrimaryGamepad}
+				<button on:click={onReset}>Clear</button>
+			{/if}
+		{:else}
+			<h4>
+				Auto Primary Gamepad:
+				{#if $getPrimaryGamepad}
+					{$getPrimaryGamepad.id} {$getPrimaryGamepad.index}
 				{:else}
 					None
 				{/if}
-			{/if}
-		</h4>
-
-		<button on:click={onClick}>
-			{#if $allowNewPrimaryGamepad}
-				Cancel
-			{:else}
-				Set
-			{/if}
-		</button>
-
-		{#if $primaryGamepad}
-			<button on:click={onClear}>Clear</button>
+			</h4>
 		{/if}
 	</div>
 </li>

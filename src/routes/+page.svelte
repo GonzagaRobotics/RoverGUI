@@ -1,11 +1,10 @@
 <script lang="ts">
 	import '../styles/app.css';
 	import Navbar from './navbar/Navbar.svelte';
-	import { WindowLayoutParser, type WindowLayout, type Tab } from '$lib/WindowLayoutParser';
+	import { WindowLayoutParser, type WindowLayout, type Tab } from '$lib/data/WindowLayoutParser';
 	import { onMount } from 'svelte';
 	import Window from './Window.svelte';
 	import Settings from './settings/Settings.svelte';
-	import { disposeGamepadManager } from '$lib/GamepadManager';
 
 	let layoutData: WindowLayout | undefined = undefined;
 	let selectedTab: Tab | undefined = undefined;
@@ -27,10 +26,6 @@
 
 	onMount(() => {
 		loadWindowLayout();
-
-		return () => {
-			disposeGamepadManager();
-		};
 	});
 </script>
 

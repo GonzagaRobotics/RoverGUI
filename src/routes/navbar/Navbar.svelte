@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { WindowLayout } from '$lib/WindowLayoutParser';
+	import type { WindowLayout } from '$lib/data/WindowLayoutParser';
 	import Tab from './Tab.svelte';
 	import ConnectionStatus from './ConnectionStatus.svelte';
 	import AllowPublishing from './AllowPublishing.svelte';
@@ -12,7 +12,7 @@
 <nav>
 	<ul id="info">
 		<li><h1>Rover GUI</h1></li>
-		<li><p class="text-small">v0.3.0 - 11/5/2023</p></li>
+		<li><p class="text-small">v0.4.0 - 11/10/2023</p></li>
 	</ul>
 
 	<ul id="tabs">
