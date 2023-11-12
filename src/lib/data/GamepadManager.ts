@@ -1,57 +1,11 @@
 import { get, writable } from 'svelte/store';
 import { info, log, debug, warn } from './Logger';
 import { clientConfig } from './Client';
+import { axisInput, buttonInput, triggerInput } from './InputManager';
 
 type GamepadState = {
 	axes: number[];
 	buttons: number[];
-};
-
-export type gamepadAxis = 'leftStickX' | 'leftStickY' | 'rightStickX' | 'rightStickY';
-export type gamepadButton =
-	| 'a'
-	| 'b'
-	| 'x'
-	| 'y'
-	| 'leftBumper'
-	| 'rightBumper'
-	| 'leftTrigger'
-	| 'rightTrigger'
-	| 'back'
-	| 'start'
-	| 'leftStick'
-	| 'rightStick'
-	| 'dpadUp'
-	| 'dpadDown'
-	| 'dpadLeft'
-	| 'dpadRight'
-	| 'xbox';
-
-const gamepadAxisMap: { [key: number]: gamepadAxis } = {
-	0: 'leftStickX',
-	1: 'leftStickY',
-	2: 'rightStickX',
-	3: 'rightStickY'
-};
-
-const gamepadButtonMap: { [key: number]: gamepadButton } = {
-	0: 'a',
-	1: 'b',
-	2: 'x',
-	3: 'y',
-	4: 'leftBumper',
-	5: 'rightBumper',
-	6: 'leftTrigger',
-	7: 'rightTrigger',
-	8: 'back',
-	9: 'start',
-	10: 'leftStick',
-	11: 'rightStick',
-	12: 'dpadUp',
-	13: 'dpadDown',
-	14: 'dpadLeft',
-	15: 'dpadRight',
-	16: 'xbox'
 };
 
 /** All gamepads that are connected. However, only the primary gamepad is polled. */
@@ -70,16 +24,13 @@ let primaryGamepadIndex = -1;
 /** Whether we allow new primary gamepads to be set (not including automatic reconnection). */
 export const allowNewPrimaryGamepad = writable(false);
 
-/** How often the gamepad is polled in ms. */
-const pollInterval = 20;
-
-const primaryGamepadLastState: GamepadState = {
+let lastPrimaryGamepadState: GamepadState = {
 	axes: Array(4).fill(0),
 	buttons: Array(17).fill(0)
 };
 
-const primaryGamepadAxisEvents: { axis: number; callback: (val: number) => void }[] = [];
-const primaryGamepadButtonEvents: { button: number; callback: (val: number) => void }[] = [];
+// Start polling for gamepad input
+requestAnimationFrame(poll);
 
 // When a gamepad is connected
 window.addEventListener('gamepadconnected', (event) => {
@@ -129,14 +80,6 @@ window.addEventListener('gamepaddisconnected', (event) => {
 	debug('GamepadManager', `There are now ${allGamepads.length} gamepads.`);
 });
 
-// Poll for events every 20ms
-window.setInterval(() => {
-	poll();
-}, pollInterval);
-
-/**
- * Polls the gamepad for updates, triggering events as necessary.
- */
 function poll(): void {
 	// If there is no primary gamepad, poll for one if we are allowed to
 	if (get(allowNewPrimaryGamepad) && clientConfig.autoPrimaryGamepad == false) {
@@ -146,33 +89,36 @@ function poll(): void {
 	const primaryGamepadInternal = get(primaryGamepad);
 
 	// If we still don't have a primary gamepad, we can't do anything
-	if (primaryGamepadInternal == null) {
-		return;
-	}
+	if (primaryGamepadInternal) {
+		const newPrimaryGamepadState: GamepadState = {
+			axes: [...primaryGamepadInternal.axes],
+			buttons: [...primaryGamepadInternal.buttons].map((button) => button.value)
+		};
 
-	// Check for axis events
-	for (const event of primaryGamepadAxisEvents) {
-		const axis = primaryGamepadInternal.axes[event.axis];
-
-		if (axis != primaryGamepadLastState.axes[event.axis]) {
-			event.callback(axis);
+		// If the gamepad state has changed, notify the InputManager
+		for (let i = 0; i < newPrimaryGamepadState.axes.length; i++) {
+			if (newPrimaryGamepadState.axes[i] != lastPrimaryGamepadState.axes[i]) {
+				axisInput(i, newPrimaryGamepadState.axes[i]);
+			}
 		}
-	}
 
-	// Check for button events
-	for (const event of primaryGamepadButtonEvents) {
-		const button = primaryGamepadInternal.buttons[event.button].value;
+		for (let i = 0; i < newPrimaryGamepadState.buttons.length; i++) {
+			if (newPrimaryGamepadState.buttons[i] != lastPrimaryGamepadState.buttons[i]) {
+				buttonInput(i, newPrimaryGamepadState.buttons[i] > 0.5);
 
-		if (button != primaryGamepadLastState.buttons[event.button]) {
-			event.callback(button);
+				// If the button is a trigger, we also have to notify the trigger itself
+				if (i == 6 || i == 7) {
+					triggerInput(i, newPrimaryGamepadState.buttons[i]);
+				}
+			}
 		}
+
+		// Update the last state
+		lastPrimaryGamepadState = newPrimaryGamepadState;
 	}
 
-	// Update the last state
-	primaryGamepadLastState.axes = [...primaryGamepadInternal.axes];
-	primaryGamepadLastState.buttons = [...primaryGamepadInternal.buttons].map(
-		(button) => button.value
-	);
+	// Poll again on the next animation frame
+	requestAnimationFrame(poll);
 }
 
 /**
@@ -209,15 +155,3 @@ export function resetPrimaryGamepad(): void {
 
 /** A subscription to the primary gamepad. */
 export const getPrimaryGamepad = { subscribe: primaryGamepad.subscribe };
-
-export function bindAxis(axis: gamepadAxis, callback: (val: number) => void): void {
-	const index = Object.values(gamepadAxisMap).indexOf(axis);
-
-	primaryGamepadAxisEvents.push({ axis: index, callback });
-}
-
-export function bindButton(button: gamepadButton, callback: (val: number) => void): void {
-	const index = Object.values(gamepadButtonMap).indexOf(button);
-
-	primaryGamepadButtonEvents.push({ button: index, callback });
-}

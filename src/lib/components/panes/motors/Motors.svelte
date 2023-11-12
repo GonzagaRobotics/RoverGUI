@@ -1,6 +1,10 @@
 <script lang="ts">
 	import { clientConfig, clientState, ros } from '$lib/data/Client';
-	import { bindAxis } from '$lib/data/GamepadManager';
+	import {
+		addAxisInputListener,
+		addButtonInputListener,
+		addTriggerInputListener
+	} from '$lib/data/InputManager';
 	import { Topic } from 'roslib';
 
 	let motorLt = 0.99;
@@ -49,40 +53,72 @@
 				messageType: 'std_msgs/Float32'
 		  });
 
-	$: lastInput = 0;
+	function motorLeftTrigger(val: number) {
+		// Resting is 0.99999 and compressed is -0.99999
+		// Our val is 0 to 1
+		motorLt = 0.99999 - val * 1.9999;
 
-	function handleMotorInput(val: number) {
-		// For now, do inversion and deadzone here
-		let input = -val;
-
-		if (Math.abs(input) < 0.05) input = 0;
-		if (Math.abs(input) > 0.95) input = Math.sign(input);
-
-		input *= 0.99;
-
-		if (Math.abs(input - lastInput) > 0.05) {
-			lastInput = input;
-
-			motorLt = input;
-			motorRt = input;
-			motorLb = input;
-			motorRb = input;
-			motorDlr = input;
-
-			if ($clientState.publishingAllowed) {
-				if (motorLtTopic) motorLtTopic.publish({ data: motorLt });
-				if (motorRtTopic) motorRtTopic.publish({ data: motorRt });
-				if (motorLbTopic) motorLbTopic.publish({ data: motorLb });
-				if (motorRbTopic) motorRbTopic.publish({ data: motorRb });
-				if (motorDlrTopic) motorDlrTopic.publish({ data: motorDlr });
-			}
+		if (!clientConfig.preview) {
+			motorLtTopic!.publish({ data: motorLt });
 		}
 	}
 
-	bindAxis('leftStickY', handleMotorInput);
+	function motorRightTrigger(val: number) {
+		// Resting is 0.99999 and compressed is -0.99999
+		// Our val is 0 to 1
+		motorRt = 0.99999 - val * 1.9999;
+
+		if (!clientConfig.preview) {
+			motorRtTopic!.publish({ data: motorRt });
+		}
+	}
+
+	function motorLeftBumper(val: boolean) {
+		// Resting is 0, compressed is 1
+		motorLb = val ? 1 : 0;
+
+		if (!clientConfig.preview) {
+			motorLbTopic!.publish({ data: motorLb });
+		}
+	}
+
+	function motorRightBumper(val: boolean) {
+		// Resting is 0, compressed is 1
+		motorRb = val ? 1 : 0;
+
+		if (!clientConfig.preview) {
+			motorRbTopic!.publish({ data: motorRb });
+		}
+	}
+
+	function motorDpadL(val: boolean) {
+		// Left is 1, right is -1
+		motorDlr = val ? 1 : 0;
+
+		if (!clientConfig.preview) {
+			motorDlrTopic!.publish({ data: motorDlr });
+		}
+	}
+
+	function motorDpadR(val: boolean) {
+		// Left is 1, right is -1
+		motorDlr = val ? -1 : 0;
+
+		if (!clientConfig.preview) {
+			motorDlrTopic!.publish({ data: motorDlr });
+		}
+	}
+
+	addTriggerInputListener('leftTrigger', 'motors', motorLeftTrigger);
+	addTriggerInputListener('rightTrigger', 'motors', motorRightTrigger);
+
+	addButtonInputListener('leftBumper', 'motors', motorLeftBumper);
+	addButtonInputListener('rightBumper', 'motors', motorRightBumper);
+
+	addButtonInputListener('dpadLeft', 'motors', motorDpadL);
+	addButtonInputListener('dpadRight', 'motors', motorDpadR);
 </script>
 
-<h4>Input: {lastInput}</h4>
 <h3>Motors</h3>
 <p>Left Trigger: {motorLt}</p>
 <p>Right Trigger: {motorRt}</p>
