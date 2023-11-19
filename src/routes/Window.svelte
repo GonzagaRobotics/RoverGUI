@@ -9,7 +9,7 @@
 
 <main>
 	{#if selectedTab}
-		{#each selectedTab.panes as pane}
+		{#each selectedTab.panes as pane (pane.uuid)}
 			<Pane
 				uuid={pane.uuid}
 				name={layoutData.panes.find((p) => p.uuid == pane.uuid)?.name ?? 'Unknown'}
