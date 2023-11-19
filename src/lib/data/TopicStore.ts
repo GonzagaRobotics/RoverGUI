@@ -122,6 +122,9 @@ function rosTopicReadStoreInternal<T>(
 						// If we already finished loading, don't update the loading state
 						if (newData.loading == false) return newData;
 
+						// If we have already received first data from this topic, the loading state is already correct
+						if (receivedTopics.has(key)) return newData;
+
 						// Add the topic to the set of received topics
 						receivedTopics.add(key);
 
