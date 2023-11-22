@@ -12,7 +12,7 @@
 <nav>
 	<ul id="info">
 		<li><h1>Rover GUI</h1></li>
-		<li><p class="text-small">v0.4.1 - 11/18/2023</p></li>
+		<li><p class="text-small">v0.5.0 - 11/21/2023</p></li>
 	</ul>
 
 	<ul id="tabs">

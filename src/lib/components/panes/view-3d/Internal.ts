@@ -1,9 +1,19 @@
-import { WebGLRenderer, PerspectiveCamera, Scene } from 'three';
+import { WebGLRenderer, PerspectiveCamera, Scene, Object3D } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { Rover } from './Rover';
+import { Lighting } from './Lighting';
 
 export interface Disposable {
 	disposed: boolean;
 	dispose(): void;
+}
+
+export interface RequiresLoading {
+	load(caller: View3DInternal): void;
+}
+
+export interface Updateable {
+	update(deltaTime: number): void;
 }
 
 export class View3DInternal implements Disposable {
@@ -13,7 +23,13 @@ export class View3DInternal implements Disposable {
 	camera: PerspectiveCamera;
 	controls: OrbitControls;
 
+	numLoaders = 0;
+	numLoaded = 0;
+
+	updateables: Updateable[] = [];
 	children: Disposable[] = [];
+
+	lastRenderTime: number | undefined = undefined;
 
 	disposed = false;
 
@@ -41,8 +57,31 @@ export class View3DInternal implements Disposable {
 		this.controls.maxDistance = 5;
 		this.controls.enableDamping = true;
 
-		// Start the render loop
-		requestAnimationFrame(() => this.render());
+		const rover = new Rover();
+		this.numLoaders++;
+		rover.load(this);
+
+		const lighting = new Lighting(this);
+		this.numLoaders++;
+		lighting.load(this);
+	}
+
+	addSceneChild(child: Disposable, obj: Object3D): void {
+		this.children.push(child);
+		this.scene.add(obj);
+	}
+
+	addUpdateable(updateable: Updateable): void {
+		this.updateables.push(updateable);
+	}
+
+	objectLoaded(): void {
+		this.numLoaded++;
+
+		if (this.numLoaded === this.numLoaders) {
+			// We can start rendering now
+			requestAnimationFrame(this.render.bind(this));
+		}
 	}
 
 	dispose(): void {
@@ -58,15 +97,24 @@ export class View3DInternal implements Disposable {
 		this.controls.dispose();
 	}
 
-	private render(): void {
+	private render(now: DOMHighResTimeStamp): void {
 		if (this.disposed) {
 			return;
 		}
 
+		if (this.lastRenderTime == undefined) {
+			this.lastRenderTime = now;
+		}
+
+		const deltaTime = (now - this.lastRenderTime) / 1000;
+
 		this.controls.update();
+		this.updateables.forEach((updateable) => updateable.update(deltaTime));
 
 		this.renderer.render(this.scene, this.camera);
 
-		requestAnimationFrame(() => this.render());
+		this.lastRenderTime = now;
+
+		requestAnimationFrame(this.render.bind(this));
 	}
 }

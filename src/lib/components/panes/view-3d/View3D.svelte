@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { View3DInternal } from './View3DInternal';
+	import { View3DInternal } from './Internal';
 	import View3DHeading from './View3DHeading.svelte';
 	import View3DInfo from './View3DInfo.svelte';
 	import { gpsimuStore } from '$lib/data/ros/GPSIMU';
@@ -12,9 +12,6 @@
 	$: loading = clientConfig.preview == false && $gpsimuStore == undefined;
 
 	onMount(() => {
-		rendererCanvas.width = rendererCanvas.clientWidth;
-		rendererCanvas.height = rendererCanvas.clientHeight;
-
 		internal = new View3DInternal(rendererCanvas);
 
 		return () => {
