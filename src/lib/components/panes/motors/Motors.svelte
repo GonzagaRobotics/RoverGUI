@@ -1,10 +1,6 @@
 <script lang="ts">
-	import { clientConfig, clientState, ros } from '$lib/data/Client';
-	import {
-		addAxisInputListener,
-		addButtonInputListener,
-		addTriggerInputListener
-	} from '$lib/data/InputManager';
+	import { clientConfig, ros } from '$lib/data/Client';
+	import { addAxisHandle, addButtonHandle, registerScope } from '$lib/data/input/InputSystem';
 	import { Topic } from 'roslib';
 
 	let motorLt = 0.99;
@@ -91,32 +87,47 @@
 		}
 	}
 
-	function motorDpadL(val: boolean) {
+	function motorDpad(val: number) {
 		// Left is 1, right is -1
-		motorDlr = val ? 1 : 0;
+		motorDlr = val;
 
 		if (!clientConfig.preview) {
 			motorDlrTopic!.publish({ data: motorDlr });
 		}
 	}
 
-	function motorDpadR(val: boolean) {
-		// Left is 1, right is -1
-		motorDlr = val ? -1 : 0;
+	registerScope('motors');
 
-		if (!clientConfig.preview) {
-			motorDlrTopic!.publish({ data: motorDlr });
-		}
-	}
+	addAxisHandle({
+		axis: 'leftTrigger',
+		// scope: 'motors',
+		callback: motorLeftTrigger
+	});
 
-	addTriggerInputListener('leftTrigger', 'motors', motorLeftTrigger);
-	addTriggerInputListener('rightTrigger', 'motors', motorRightTrigger);
+	addAxisHandle({
+		axis: 'rightTrigger',
+		// scope: 'motors',
+		callback: motorRightTrigger
+	});
 
-	addButtonInputListener('leftBumper', 'motors', motorLeftBumper);
-	addButtonInputListener('rightBumper', 'motors', motorRightBumper);
+	addButtonHandle({
+		button: 'leftBumper',
+		// scope: 'motors',
+		callback: motorLeftBumper
+	});
 
-	addButtonInputListener('dpadLeft', 'motors', motorDpadL);
-	addButtonInputListener('dpadRight', 'motors', motorDpadR);
+	addButtonHandle({
+		button: 'rightBumper',
+		// scope: 'motors',
+		callback: motorRightBumper
+	});
+
+	addAxisHandle({
+		axis: 'dpadX',
+		// scope: 'motors',
+		callback: motorDpad,
+		inverted: true
+	});
 </script>
 
 <h3>Motors</h3>

@@ -1,9 +1,7 @@
 import { get, writable } from 'svelte/store';
 import { info, log, debug, warn } from '../Logger';
 import { clientConfig } from '../Client';
-import { axisInput, buttonInput, triggerInput } from '../InputManager';
-
-
+import { updateGamepadState, type InputGamepadState, resetGamepadState } from './InputSystem';
 
 /** All gamepads that are connected. However, only the primary gamepad is polled. */
 const allGamepads: Gamepad[] = [];
@@ -20,14 +18,6 @@ let primaryGamepadIndex = -1;
 
 /** Whether we allow new primary gamepads to be set (not including automatic reconnection). */
 export const allowNewPrimaryGamepad = writable(false);
-
-let lastPrimaryGamepadState: InputGamepadState = {
-	axes: Array(4).fill(0),
-	buttons: Array(17).fill(0)
-};
-
-// Start polling for gamepad input
-requestAnimationFrame(poll);
 
 // When a gamepad is connected
 window.addEventListener('gamepadconnected', (event) => {
@@ -64,6 +54,8 @@ window.addEventListener('gamepaddisconnected', (event) => {
 	if (primaryGamepadIndex == event.gamepad.index) {
 		warn('GamepadManager', 'Primary gamepad disconnected.');
 		primaryGamepad.set(null);
+
+		resetGamepadState();
 	}
 
 	// If autoPrimaryGamepad is enabled, the first gamepad is the primary gamepad
@@ -77,7 +69,7 @@ window.addEventListener('gamepaddisconnected', (event) => {
 	debug('GamepadManager', `There are now ${allGamepads.length} gamepads.`);
 });
 
-function poll(): void {
+export function gamepadManagerPoll(): void {
 	// If there is no primary gamepad, poll for one if we are allowed to
 	if (get(allowNewPrimaryGamepad) && clientConfig.autoPrimaryGamepad == false) {
 		pollForPrimaryGamepad();
@@ -92,30 +84,9 @@ function poll(): void {
 			buttons: [...primaryGamepadInternal.buttons].map((button) => button.value)
 		};
 
-		// If the gamepad state has changed, notify the InputManager
-		for (let i = 0; i < newPrimaryGamepadState.axes.length; i++) {
-			if (newPrimaryGamepadState.axes[i] != lastPrimaryGamepadState.axes[i]) {
-				axisInput(i, newPrimaryGamepadState.axes[i]);
-			}
-		}
-
-		for (let i = 0; i < newPrimaryGamepadState.buttons.length; i++) {
-			if (newPrimaryGamepadState.buttons[i] != lastPrimaryGamepadState.buttons[i]) {
-				buttonInput(i, newPrimaryGamepadState.buttons[i] > 0.5);
-
-				// If the button is a trigger, we also have to notify the trigger itself
-				if (i == 6 || i == 7) {
-					triggerInput(i, newPrimaryGamepadState.buttons[i]);
-				}
-			}
-		}
-
-		// Update the last state
-		lastPrimaryGamepadState = newPrimaryGamepadState;
+		// Tell the input system about the new state
+		updateGamepadState(newPrimaryGamepadState);
 	}
-
-	// Poll again on the next animation frame
-	requestAnimationFrame(poll);
 }
 
 /**
@@ -146,6 +117,8 @@ export function resetPrimaryGamepad(): void {
 
 	primaryGamepad.set(null);
 	primaryGamepadIndex = -1;
+
+	resetGamepadState();
 
 	log('GamepadManager', 'Primary gamepad reset.');
 }

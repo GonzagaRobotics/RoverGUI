@@ -1,6 +1,7 @@
 import { get, writable } from 'svelte/store';
 import type { InputAxisHandle, InputButtonHandle } from './InputHandle';
 import { debug, info } from '../Logger';
+import { gamepadManagerPoll } from './GamepadManager';
 
 /** Axis available for input. */
 export type InputAxis =
@@ -126,11 +127,16 @@ function processAxisValue(value: number, handle: InputAxisHandle): number {
 	return newValue;
 }
 
+requestAnimationFrame(() => {
+	gamepadManagerPoll();
+	poll();
+});
+
 function poll() {
 	// Button input
 	for (const handle of buttonHandles.values()) {
 		// Before we do anything, check if the scope is correct or global
-		if (handle.scope != undefined && handle.scope == get(_currentScope)) continue;
+		if (handle.scope != undefined && handle.scope != get(_currentScope)) continue;
 
 		const prevValue = lastInputState.buttons[inputButtonToId(handle.button)];
 		const value = currentInputState.buttons[inputButtonToId(handle.button)];
@@ -145,23 +151,64 @@ function poll() {
 	// Axis input
 	for (const [id, handle] of axisHandles.entries()) {
 		// Before we do anything, check if the scope is correct or global
-		if (handle.scope != undefined && handle.scope == get(_currentScope)) continue;
+		if (handle.scope != undefined && handle.scope != get(_currentScope)) continue;
 
-		const prevValue = lastInputState.axes[inputAxisToId(handle.axis)];
-		const value = currentInputState.axes[inputAxisToId(handle.axis)];
+		// The Dpad and triggers are not axis internally, so we need to handle them differently here
+		if (handle.axis == 'dpadX' || handle.axis == 'dpadY') {
+			// Different buttons are used for the Dpad depending on the axis
+			const negativeValue =
+				handle.axis == 'dpadX'
+					? currentInputState.buttons[inputButtonToId('dpadLeft')]
+					: currentInputState.buttons[inputButtonToId('dpadDown')];
 
-		// We need to process the value differently depending on the handle options
-		const processedValue = processAxisValue(value, handle);
+			const positiveValue =
+				handle.axis == 'dpadX'
+					? currentInputState.buttons[inputButtonToId('dpadRight')]
+					: currentInputState.buttons[inputButtonToId('dpadUp')];
 
-		// Check if the value has changed enough to fire an event from when the event was last fired
-		if (Math.abs(processedValue - lastEventAxisValues.get(id)!) >= (handle.eventDelta ?? 0.05)) {
-			handle.callback(processedValue);
-			lastEventAxisValues.set(id, processedValue);
+			// The only modification we need to make is to invert the value if needed
+			const newValue = (positiveValue - negativeValue) * (handle.inverted ?? false ? -1 : 1);
+
+			// The Dpad isn't analog, so we only need to check that there has been a change
+			if (newValue != lastEventAxisValues.get(id)) {
+				handle.callback(newValue);
+				lastEventAxisValues.set(id, newValue);
+			}
+		} else if (handle.axis == 'leftTrigger' || handle.axis == 'rightTrigger') {
+			const value = currentInputState.buttons[inputButtonToId(handle.axis)];
+
+			// The only difference between the triggers and standard axis is that the triggers are buttons
+			// Everything else is the same
+
+			// We need to process the value differently depending on the handle options
+			const processedValue = processAxisValue(value, handle);
+
+			// Check if the value has changed enough to fire an event from when the event was last fired
+			if (Math.abs(processedValue - lastEventAxisValues.get(id)!) >= (handle.eventDelta ?? 0.05)) {
+				handle.callback(processedValue);
+				lastEventAxisValues.set(id, processedValue);
+			}
+		} else {
+			const value = currentInputState.axes[inputAxisToId(handle.axis)];
+
+			// We need to process the value differently depending on the handle options
+			const processedValue = processAxisValue(value, handle);
+
+			// Check if the value has changed enough to fire an event from when the event was last fired
+			if (Math.abs(processedValue - lastEventAxisValues.get(id)!) >= (handle.eventDelta ?? 0.05)) {
+				handle.callback(processedValue);
+				lastEventAxisValues.set(id, processedValue);
+			}
 		}
 	}
 
 	// Update the last state
 	lastInputState = currentInputState;
+
+	requestAnimationFrame(() => {
+		gamepadManagerPoll();
+		poll();
+	});
 }
 
 /**
@@ -202,6 +249,7 @@ export function setScope(scope: string): boolean {
  */
 export function addAxisHandle(options: InputAxisHandle): number {
 	axisHandles.set(nextAxisHandleId, options);
+	lastEventAxisValues.set(nextAxisHandleId, 0);
 
 	debug(TAG, `Added new axis handle: ${options.axis}`);
 
@@ -240,6 +288,22 @@ export function removeHandle(type: 'button' | 'axis', id: number): boolean {
 
 		return axisHandles.delete(id);
 	}
+}
+
+/**
+ * Updates the gamepad state.
+ *
+ * @param state The new gamepad state.
+ */
+export function updateGamepadState(state: InputGamepadState) {
+	currentInputState = state;
+}
+
+/**
+ * Resets the gamepad state to the default state.
+ */
+export function resetGamepadState() {
+	currentInputState = DEFAULT_GAMEPAD_STATE;
 }
 
 export const currentScope = { subscribe: _currentScope.subscribe };

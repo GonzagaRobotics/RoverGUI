@@ -4,7 +4,7 @@
 		allowNewPrimaryGamepad,
 		getPrimaryGamepad,
 		resetPrimaryGamepad
-	} from '$lib/data/GamepadManager';
+	} from '$lib/data/input/GamepadManager';
 
 	function onClick() {
 		$allowNewPrimaryGamepad = !$allowNewPrimaryGamepad;
