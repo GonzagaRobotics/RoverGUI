@@ -1,12 +1,9 @@
 import { get, writable } from 'svelte/store';
-import { info, log, debug, warn } from './Logger';
-import { clientConfig } from './Client';
-import { axisInput, buttonInput, triggerInput } from './InputManager';
+import { info, log, debug, warn } from '../Logger';
+import { clientConfig } from '../Client';
+import { axisInput, buttonInput, triggerInput } from '../InputManager';
 
-type GamepadState = {
-	axes: number[];
-	buttons: number[];
-};
+
 
 /** All gamepads that are connected. However, only the primary gamepad is polled. */
 const allGamepads: Gamepad[] = [];
@@ -24,7 +21,7 @@ let primaryGamepadIndex = -1;
 /** Whether we allow new primary gamepads to be set (not including automatic reconnection). */
 export const allowNewPrimaryGamepad = writable(false);
 
-let lastPrimaryGamepadState: GamepadState = {
+let lastPrimaryGamepadState: InputGamepadState = {
 	axes: Array(4).fill(0),
 	buttons: Array(17).fill(0)
 };
@@ -90,7 +87,7 @@ function poll(): void {
 
 	// If we still don't have a primary gamepad, we can't do anything
 	if (primaryGamepadInternal) {
-		const newPrimaryGamepadState: GamepadState = {
+		const newPrimaryGamepadState: InputGamepadState = {
 			axes: [...primaryGamepadInternal.axes],
 			buttons: [...primaryGamepadInternal.buttons].map((button) => button.value)
 		};

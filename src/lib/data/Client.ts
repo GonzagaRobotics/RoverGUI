@@ -41,6 +41,8 @@ export type ClientState = {
 	publishingAllowed: boolean;
 	/** The current connection status. */
 	connectionStatus: ClientConnectionStatus;
+	/** How often messages are published to the rover. */
+	publishingRate: number;
 };
 
 /** The config loaded. */
@@ -54,7 +56,8 @@ export const clientConfig: ClientConfig = {
 /** The current state of the client. */
 export const clientState = writable<ClientState>({
 	connectionStatus: ClientConnectionStatus.Disconnected,
-	publishingAllowed: true
+	publishingAllowed: true,
+	publishingRate: 10
 });
 
 /**
@@ -62,11 +65,7 @@ export const clientState = writable<ClientState>({
  *
  * This is null only when previewing the client.
  */
-export const ros = clientConfig.preview
-	? null
-	: new Ros({
-			url: clientConfig.rosbridgeUrl
-	  });
+export const ros = clientConfig.preview ? null : new Ros({ url: clientConfig.rosbridgeUrl });
 
 // Setup the ROS client
 if (clientConfig.preview) {
