@@ -34,6 +34,8 @@ export type InputAxisHandle = InputHandleOptions & {
 	 * @default 0.05
 	 */
 	eventDelta?: number;
+	/** Exponent to apply to the input value. Must be greater than 0. @default 1 */
+	curve?: number;
 	/** The callback to use when an event is fired. */
 	callback: (value: number) => void;
 };

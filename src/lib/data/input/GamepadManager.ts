@@ -1,5 +1,4 @@
 import { get, writable } from 'svelte/store';
-import { info, log, debug, warn } from '../Logger';
 import { clientConfig } from '../Client';
 import { updateGamepadState, type InputGamepadState, resetGamepadState } from './InputSystem';
 
@@ -21,38 +20,38 @@ export const allowNewPrimaryGamepad = writable(false);
 
 // When a gamepad is connected
 window.addEventListener('gamepadconnected', (event) => {
-	info('GamepadManager', `Gamepad connected: ${event.gamepad.id}`);
+	console.info(`|GamepadManager| Gamepad connected: ${event.gamepad.id}`);
 
 	// Add it to the list of all gamepads
 	allGamepads.push(event.gamepad);
 
 	// If autoPrimaryGamepad is enabled, the new gamepad is the primary gamepad
 	if (clientConfig.autoPrimaryGamepad) {
-		log('GamepadManager', 'Primary gamepad set automatically.');
+		console.log('|GamepadManager| Primary gamepad set automatically.');
 
 		primaryGamepad.set(event.gamepad);
 		primaryGamepadIndex = event.gamepad.index;
 	} else {
 		// We might have lost connection to the primary gamepad, so we can check if it's back
 		if (get(primaryGamepad) == null && primaryGamepadIndex == event.gamepad.index) {
-			log('GamepadManager', 'Primary gamepad reconnected.');
+			console.log('|GamepadManager', 'Primary gamepad reconnected.');
 			primaryGamepad.set(event.gamepad);
 		}
 	}
 
-	debug('GamepadManager', `There are now ${allGamepads.length} gamepads.`);
+	console.debug(`|GamepadManager| There are now ${allGamepads.length} gamepads.`);
 });
 
 // When a gamepad is disconnected
 window.addEventListener('gamepaddisconnected', (event) => {
-	info('GamepadManager', `Gamepad disconnected: ${event.gamepad.id}`);
+	console.info(`|GamepadManager| Gamepad disconnected: ${event.gamepad.id}`);
 
 	// Remove it from the list of all gamepads
 	allGamepads.splice(allGamepads.indexOf(event.gamepad), 1);
 
 	// Check if the primary gamepad was disconnected, and clear it if so, but don't reset the index
 	if (primaryGamepadIndex == event.gamepad.index) {
-		warn('GamepadManager', 'Primary gamepad disconnected.');
+		console.warn('|GamepadManager| Primary gamepad disconnected.');
 		primaryGamepad.set(null);
 
 		resetGamepadState();
@@ -60,13 +59,13 @@ window.addEventListener('gamepaddisconnected', (event) => {
 
 	// If autoPrimaryGamepad is enabled, the first gamepad is the primary gamepad
 	if (clientConfig.autoPrimaryGamepad && allGamepads.length > 0) {
-		log('GamepadManager', 'Primary gamepad set automatically.');
+		console.log('|GamepadManager| Primary gamepad set automatically.');
 
 		primaryGamepad.set(allGamepads[0]);
 		primaryGamepadIndex = allGamepads[0].index;
 	}
 
-	debug('GamepadManager', `There are now ${allGamepads.length} gamepads.`);
+	console.debug(`|GamepadManager| There are now ${allGamepads.length} gamepads.`);
 });
 
 export function gamepadManagerPoll(): void {
@@ -96,7 +95,7 @@ export function gamepadManagerPoll(): void {
 function pollForPrimaryGamepad(): void {
 	for (const gamepad of allGamepads) {
 		if (gamepad.buttons[7].pressed && gamepad.buttons[6].pressed) {
-			log('GamepadManager', `Primary gamepad found: ${gamepad.id}`);
+			console.log(`|GamepadManager| Primary gamepad found: ${gamepad.id}`);
 
 			primaryGamepad.set(gamepad);
 			primaryGamepadIndex = gamepad.index;
@@ -120,7 +119,7 @@ export function resetPrimaryGamepad(): void {
 
 	resetGamepadState();
 
-	log('GamepadManager', 'Primary gamepad reset.');
+	console.log('|GamepadManager| Primary gamepad reset.');
 }
 
 /** A subscription to the primary gamepad. */

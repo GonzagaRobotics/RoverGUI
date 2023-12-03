@@ -6,7 +6,6 @@ import {
 } from '$env/static/public';
 import { Ros } from 'roslib';
 import { writable } from 'svelte/store';
-import { log, warn, error } from './Logger';
 
 /** Settings for the client. */
 export type ClientConfig = {
@@ -69,12 +68,12 @@ export const ros = clientConfig.preview ? null : new Ros({ url: clientConfig.ros
 
 // Setup the ROS client
 if (clientConfig.preview) {
-	warn('Client', 'Rover GUI is in preview mode.');
-	log('Client', 'Connecting to rosbridge server...');
+	console.warn('|Client| Rover GUI is in preview mode.');
+	console.log('|Client| Connecting to rosbridge server...');
 
 	// Set the connection status to connected
 	clientState.update((val) => {
-		log('Client', 'Connected to rosbridge server.');
+		console.log('|Client| Connected to rosbridge server.');
 
 		val.connectionStatus = ClientConnectionStatus.Connected;
 
@@ -83,7 +82,7 @@ if (clientConfig.preview) {
 } else {
 	// Set the connection status to connecting
 	clientState.update((val) => {
-		log('Client', 'Connecting to rosbridge server...');
+		console.log('|Client| Connecting to rosbridge server...');
 
 		val.connectionStatus = ClientConnectionStatus.Connecting;
 
@@ -92,7 +91,7 @@ if (clientConfig.preview) {
 
 	// Set up listeners for the ROS client
 	ros!.on('connection', () => {
-		log('Client', 'Connected to rosbridge server.');
+		console.log('|Client| Connected to rosbridge server.');
 
 		clientState.update((val) => {
 			val.connectionStatus = ClientConnectionStatus.Connected;
@@ -102,7 +101,7 @@ if (clientConfig.preview) {
 	});
 
 	ros!.on('error', (rosError) => {
-		error('Client', 'Error connecting to rosbridge server.', rosError);
+		console.error('|Client| Error connecting to rosbridge server.', rosError);
 
 		clientState.update((val) => {
 			val.connectionStatus = ClientConnectionStatus.Error;
@@ -112,7 +111,7 @@ if (clientConfig.preview) {
 	});
 
 	ros!.on('close', () => {
-		log('Client', 'Disconnected from rosbridge server.');
+		console.log('|Client| Disconnected from rosbridge server.');
 
 		clientState.update((val) => {
 			val.connectionStatus = ClientConnectionStatus.Disconnected;

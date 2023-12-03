@@ -2,6 +2,7 @@ import { WebGLRenderer, PerspectiveCamera, Scene, Object3D } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { Rover } from './Rover';
 import { Lighting } from './Lighting';
+import { PointCloud } from './PointCloud';
 
 export interface Disposable {
 	disposed: boolean;
@@ -48,13 +49,13 @@ export class View3DInternal implements Disposable {
 
 		this.camera = new PerspectiveCamera(70, this.canvas.width / this.canvas.height, 0.1, 1000);
 		// If the camera is at the origin, then the OrbitControls will not work
-		this.camera.position.set(0, 0, -5);
+		this.camera.position.set(0, 0, -2);
 
 		this.controls = new OrbitControls(this.camera, this.canvas);
 		this.controls.enablePan = false;
 		this.controls.zoomSpeed = 1.5;
 		this.controls.minDistance = 1;
-		this.controls.maxDistance = 5;
+		this.controls.maxDistance = 3;
 		this.controls.enableDamping = true;
 
 		const rover = new Rover();
@@ -64,6 +65,10 @@ export class View3DInternal implements Disposable {
 		const lighting = new Lighting(this);
 		this.numLoaders++;
 		lighting.load(this);
+
+		const pointCloud = new PointCloud();
+		this.numLoaders++;
+		pointCloud.load(this);
 	}
 
 	addSceneChild(child: Disposable, obj: Object3D): void {

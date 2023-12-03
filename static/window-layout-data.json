@@ -3,9 +3,6 @@
 		"view-3d": {
 			"name": "3D View"
 		},
-		"console": {
-			"name": "Console"
-		},
 		"motors": {
 			"name": "Motors"
 		}
@@ -23,11 +20,6 @@
 					"uuid": "motors",
 					"start": { "x": 3, "y": 1 },
 					"size": { "x": 1, "y": 1 }
-				},
-				{
-					"uuid": "console",
-					"start": { "x": 4, "y": 1 },
-					"size": { "x": 1, "y": 2 }
 				}
 			]
 		}

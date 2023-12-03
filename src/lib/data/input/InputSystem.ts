@@ -1,6 +1,5 @@
 import { get, writable } from 'svelte/store';
 import type { InputAxisHandle, InputButtonHandle } from './InputHandle';
-import { debug, info } from '../Logger';
 import { gamepadManagerPoll } from './GamepadManager';
 
 /** Axis available for input. */
@@ -39,7 +38,6 @@ export type InputGamepadState = {
 	buttons: number[];
 };
 
-const TAG = 'InputSystem';
 const DEFAULT_GAMEPAD_STATE: InputGamepadState = {
 	axes: Array(4).fill(0),
 	buttons: Array(17).fill(0)
@@ -123,6 +121,9 @@ function processAxisValue(value: number, handle: InputAxisHandle): number {
 
 	// Apply the deadzone
 	if (Math.abs(newValue) < (handle.deadzone ?? 0.05)) newValue = 0;
+
+	// Apply the curve
+	newValue = Math.sign(newValue) * Math.pow(Math.abs(newValue), handle.curve ?? 1);
 
 	return newValue;
 }
@@ -221,7 +222,7 @@ export function registerScope(scope: string): boolean {
 	if (registeredScopes.has(scope)) return false;
 
 	registeredScopes.add(scope);
-	debug(TAG, `Registered new input scope: ${scope}`);
+	console.debug(`|InputSystem| Registered new input scope: ${scope}`);
 
 	return true;
 }
@@ -236,7 +237,7 @@ export function setScope(scope: string): boolean {
 	if (!registeredScopes.has(scope)) return false;
 
 	_currentScope.set(scope);
-	info(TAG, `Set current input scope: ${scope}`);
+	console.info(`|InputSystem| Set current input scope: ${scope}`);
 
 	return true;
 }
@@ -248,10 +249,15 @@ export function setScope(scope: string): boolean {
  * @returns The ID of the handle.
  */
 export function addAxisHandle(options: InputAxisHandle): number {
+	// Make sure the options are valid
+	if (options.curve != undefined && options.curve <= 0) {
+		throw new Error(`Curve must be greater than 0: ${options.curve}`);
+	}
+
 	axisHandles.set(nextAxisHandleId, options);
 	lastEventAxisValues.set(nextAxisHandleId, 0);
 
-	debug(TAG, `Added new axis handle: ${options.axis}`);
+	console.debug(`|InputSystem| Added new axis handle: ${options.axis}`);
 
 	nextAxisHandleId++;
 
@@ -267,7 +273,7 @@ export function addAxisHandle(options: InputAxisHandle): number {
 export function addButtonHandle(options: InputButtonHandle): number {
 	buttonHandles.set(nextButtonHandleId, options);
 
-	debug(TAG, `Added new button handle: ${options.button}`);
+	console.debug(`|InputSystem| Added new button handle: ${options.button}`);
 
 	nextButtonHandleId++;
 

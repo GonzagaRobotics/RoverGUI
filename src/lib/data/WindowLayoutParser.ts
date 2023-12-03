@@ -1,5 +1,3 @@
-import { debug } from './Logger';
-
 export type Pane = {
 	uuid: string;
 	name: string;
@@ -61,7 +59,7 @@ export class WindowLayoutParser {
 			});
 		}
 
-		debug('WindowLayoutParser', 'Parsed window layout', panes, tabs);
+		console.debug('|WindowLayoutParser| Parsed window layout', panes, tabs);
 
 		return {
 			panes: panes,
