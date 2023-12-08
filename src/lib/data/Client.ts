@@ -2,10 +2,13 @@ import {
 	PUBLIC_PREIVEW_CLIENT,
 	PUBLIC_ROSBRIDGE_URL,
 	PUBLIC_ALLOW_PARTIAL_DATA,
-	PUBLIC_AUTO_PRIMARY_GAMEPAD
+	PUBLIC_AUTO_PRIMARY_GAMEPAD,
+	PUBLIC_HEARTBEAT_INTERVAL,
+	PUBLIC_HEARTBEAT_TIMEOUT
 } from '$env/static/public';
 import { Ros } from 'roslib';
 import { writable } from 'svelte/store';
+import { startHeartbeat, stopHeartbeat } from './ros/Heartbeat';
 
 /** Settings for the client. */
 export type ClientConfig = {
@@ -20,6 +23,10 @@ export type ClientConfig = {
 	allowPartialData: boolean;
 	/** If true, the most recent gamepad connected will be used as the primary gamepad. */
 	autoPrimaryGamepad: boolean;
+	/** How long to wait between heartbeat messages to the rover (ms). */
+	heartbeatInterval: number;
+	/** How long to wait before considering the rover disconnected (ms). */
+	hearbeatTimeout: number;
 };
 
 /** The current status of the connection between Client and Rosbridge. */
@@ -49,7 +56,9 @@ export const clientConfig: ClientConfig = {
 	preview: PUBLIC_PREIVEW_CLIENT == 'true',
 	rosbridgeUrl: PUBLIC_ROSBRIDGE_URL,
 	allowPartialData: PUBLIC_ALLOW_PARTIAL_DATA == 'true',
-	autoPrimaryGamepad: PUBLIC_AUTO_PRIMARY_GAMEPAD == 'true'
+	autoPrimaryGamepad: PUBLIC_AUTO_PRIMARY_GAMEPAD == 'true',
+	heartbeatInterval: Number(PUBLIC_HEARTBEAT_INTERVAL),
+	hearbeatTimeout: Number(PUBLIC_HEARTBEAT_TIMEOUT)
 };
 
 /** The current state of the client. */
@@ -98,6 +107,9 @@ if (clientConfig.preview) {
 
 			return val;
 		});
+
+		// Start the heartbeat
+		startHeartbeat();
 	});
 
 	ros!.on('error', (rosError) => {
@@ -118,5 +130,8 @@ if (clientConfig.preview) {
 
 			return val;
 		});
+
+		// Stop the heartbeat
+		stopHeartbeat();
 	});
 }

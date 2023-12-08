@@ -163,13 +163,6 @@
 	}
 </script>
 
-<!-- <h3>Motors</h3>
-<p>Left Trigger: {motorLt}</p>
-<p>Right Trigger: {motorRt}</p>
-<p>Left Bumper: {motorLb}</p>
-<p>Right Bumper: {motorRb}</p>
-<p>D-Pad Left/Right: {motorDlr}</p> -->
-
 <div>
 	<img src="/rover-top-flat.png" alt="" />
 	<span class="motor top left ok">0.0</span>

@@ -1,38 +1,21 @@
-# create-svelte
+# Rover GUI
 
-Everything you need to build a Svelte project, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/master/packages/create-svelte).
+Primary GUI for using the rover. Uses SvelteKit, Typescript, and roslibjs.
 
-## Creating a project
+## Compatibility
 
-If you're seeing this, you've probably already done this step. Congrats!
+Development and testing is done on Windows 10/11 Firefox. Other modern browsers should work fine, but there may be subtle issues.
 
-```bash
-# create a new project in the current directory
-npm create svelte@latest
+There are known, potentially breaking issues with Linux, although the GUI can still connect to the rover.
 
-# create a new project in my-app
-npm create svelte@latest my-app
-```
+## Quick Start
 
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```bash
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
+1. Make sure Node.js and npm are installed.
+2. Run `npm install` to install dependencies.
+3. Copy `.env.example` to `.env` and change the values to match your setup.
+4. Run `npm run dev` to start the dev server.
+5. Navigate to `http://localhost:5173/`
 
 ## Building
 
-To create a production version of your app:
-
-```bash
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://kit.svelte.dev/docs/adapters) for your target environment.
+Building the GUI for deployment has not been tested yet.
