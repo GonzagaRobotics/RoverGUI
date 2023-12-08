@@ -1,21 +1,8 @@
 import { Message, Topic } from 'roslib';
 import { clientConfig, ros } from '../Client';
 
-const heartbeatPub = clientConfig.preview
-	? null
-	: new Topic({
-			ros: ros!,
-			name: '/rover_gui/heartbeat/pub',
-			messageType: 'rcs_interfaces/Heartbeat'
-	  });
-
-const heartbeatSub = clientConfig.preview
-	? null
-	: new Topic({
-			ros: ros!,
-			name: '/rover_gui/heartbeat/sub',
-			messageType: 'rcs_interfaces/Heartbeat'
-	  });
+let heartbeatPub: Topic | null;
+let heartbeatSub: Topic | null;
 
 let heartbeatIntervalId: NodeJS.Timeout | null;
 let heartneatTimeoutId: NodeJS.Timeout | null;
@@ -28,6 +15,20 @@ let heartbeatSendTime: number | null;
  */
 export function startHeartbeat() {
 	if (heartbeatIntervalId || clientConfig.preview) return;
+
+	if (!heartbeatPub || !heartbeatSub) {
+		heartbeatPub = new Topic({
+			ros: ros!,
+			name: '/rover_gui/heartbeat/pub',
+			messageType: 'rcs_interfaces/Heartbeat'
+		});
+
+		heartbeatSub = new Topic({
+			ros: ros!,
+			name: '/rover_gui/heartbeat/sub',
+			messageType: 'rcs_interfaces/Heartbeat'
+		});
+	}
 
 	heartbeatIntervalId = setInterval(sendHeartbeat, clientConfig.heartbeatInterval);
 
@@ -76,14 +77,14 @@ function sendHeartbeat() {
 
 	heartneatTimeoutId = setTimeout(() => {
 		console.error('|Client| Heartbeat timeout. Rover GUI may be disconnected.');
-	});
+	}, clientConfig.hearbeatTimeout);
 }
 
 function receiveHeartbeat(message: Message) {
 	// Convert the message to a typed object
 	const heartbeat = message as {
 		header: {
-			stamp: { secs: number; nsecs: number };
+			stamp: { sec: number; nanosec: number };
 			frame_id: string;
 		};
 		entity_name: string;
@@ -91,7 +92,7 @@ function receiveHeartbeat(message: Message) {
 
 	// Convert the heartbeat receive time to a JS timestamp
 	const heartbeatReceiveTime =
-		heartbeat.header.stamp.secs * 1000 + heartbeat.header.stamp.nsecs / 1000000;
+		heartbeat.header.stamp.sec * 1000 + heartbeat.header.stamp.nanosec / 1000000;
 
 	// Calculate the round trip time
 	const roundTripTime = heartbeatReceiveTime - heartbeatSendTime!;
