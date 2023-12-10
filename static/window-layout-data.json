@@ -1,0 +1,27 @@
+{
+	"panes": {
+		"view-3d": {
+			"name": "3D View"
+		},
+		"motors": {
+			"name": "Motors"
+		}
+	},
+	"tabs": {
+		"drive": {
+			"name": "Drive",
+			"panes": [
+				{
+					"uuid": "view-3d",
+					"start": { "x": 1, "y": 1 },
+					"size": { "x": 2, "y": 1 }
+				},
+				{
+					"uuid": "motors",
+					"start": { "x": 3, "y": 1 },
+					"size": { "x": 1, "y": 1 }
+				}
+			]
+		}
+	}
+}
