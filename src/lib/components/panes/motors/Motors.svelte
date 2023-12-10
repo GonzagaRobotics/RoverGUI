@@ -14,7 +14,7 @@
 		? null
 		: new Topic({
 				ros: ros!,
-				name: 'motor_command/left_trigger',
+				name: '/motor_command/left_trigger',
 				messageType: 'std_msgs/Float32'
 		  });
 
@@ -22,7 +22,7 @@
 		? null
 		: new Topic({
 				ros: ros!,
-				name: 'motor_command/right_trigger',
+				name: '/motor_command/right_trigger',
 				messageType: 'std_msgs/Float32'
 		  });
 
@@ -30,7 +30,7 @@
 		? null
 		: new Topic({
 				ros: ros!,
-				name: 'motor_command/left_shoulder',
+				name: '/motor_command/left_shoulder',
 				messageType: 'std_msgs/Float32'
 		  });
 
@@ -38,7 +38,7 @@
 		? null
 		: new Topic({
 				ros: ros!,
-				name: 'motor_command/right_shoulder',
+				name: '/motor_command/right_shoulder',
 				messageType: 'std_msgs/Float32'
 		  });
 
@@ -46,7 +46,7 @@
 		? null
 		: new Topic({
 				ros: ros!,
-				name: 'motor_command/dpad_lr',
+				name: '/motor_command/dpad_lr',
 				messageType: 'std_msgs/Float32'
 		  });
 
