@@ -1,5 +1,6 @@
 import { Message, Topic } from 'roslib';
 import { clientConfig, ros } from '../Client';
+import { writable } from 'svelte/store';
 
 let heartbeatPub: Topic | null;
 let heartbeatSub: Topic | null;
@@ -7,6 +8,8 @@ let heartbeatSub: Topic | null;
 let heartbeatIntervalId: NodeJS.Timeout | null;
 let heartneatTimeoutId: NodeJS.Timeout | null;
 let heartbeatSendTime: number | null;
+
+export const lastRoundTripTime = writable<number | null>(null);
 
 /**
  * Starts the heartbeat.
@@ -80,24 +83,14 @@ function sendHeartbeat() {
 	}, clientConfig.hearbeatTimeout);
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function receiveHeartbeat(message: Message) {
-	// Convert the message to a typed object
-	const heartbeat = message as {
-		header: {
-			stamp: { sec: number; nanosec: number };
-			frame_id: string;
-		};
-		entity_name: string;
-	};
-
-	// Convert the heartbeat receive time to a JS timestamp
-	const heartbeatReceiveTime =
-		heartbeat.header.stamp.sec * 1000 + heartbeat.header.stamp.nanosec / 1000000;
-
 	// Calculate the round trip time
-	const roundTripTime = heartbeatReceiveTime - heartbeatSendTime!;
+	const roundTripTime = Date.now() - heartbeatSendTime!;
 
-	console.log(`|Client| Heartbeat received. Round trip time: ${roundTripTime}ms`);
+	lastRoundTripTime.set(roundTripTime);
+
+	console.log(`|Client| Received heartbeat. Round trip time: ${roundTripTime}ms`);
 
 	// Clear the previous heartbeat timeout
 	if (heartneatTimeoutId) clearTimeout(heartneatTimeoutId);

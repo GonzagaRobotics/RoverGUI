@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { ClientConnectionStatus } from '$lib/data/Client';
 	import { clientState } from '$lib/data/Client';
+	import { lastRoundTripTime } from '$lib/data/ros/Heartbeat';
 	import Icon from '$lib/components/Icon.svelte';
 </script>
 
@@ -11,6 +12,9 @@
 	class:connected={$clientState.connectionStatus == ClientConnectionStatus.Connected}
 >
 	<Icon icon="wifi" --s-size={'2.5rem'} />
+	{#if $lastRoundTripTime}
+		<p>{$lastRoundTripTime}ms</p>
+	{/if}
 </li>
 
 <style>
