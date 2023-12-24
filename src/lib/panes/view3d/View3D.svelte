@@ -1,12 +1,10 @@
 <script lang="ts">
+	import Pane from '../Pane.svelte';
+
 	export let start: { x: number; y: number };
 	export let end: { x: number; y: number };
 </script>
 
-<div
-	style="grid-column: {start.x} / {end.x}; grid-row: {start.y} / {end.y};"
-	class="flex flex-col items-center border-2 rounded-container-token border-secondary-300"
->
-	<h2 class="w-full h4 text-center">3D View</h2>
-	<div class="w-full flex-grow"></div>
-</div>
+<Pane {start} {end} name="3D View">
+	<svelte:fragment slot="main">Hello World</svelte:fragment>
+</Pane>
