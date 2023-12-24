@@ -1,13 +1,11 @@
 <script lang="ts">
 	import { AppBar } from '@skeletonlabs/skeleton';
 	import Tabs from './Tabs.svelte';
-	import type { WindowLayoutData } from '$lib/LayoutParser';
 	import type { Writable } from 'svelte/store';
 	import Connection from './status/Connection.svelte';
 	import Gamepad from './status/Gamepad.svelte';
 	import Latency from './status/Latency.svelte';
 
-	export let layout: WindowLayoutData;
 	export let selectedTabId: Writable<string>;
 </script>
 
@@ -16,7 +14,7 @@
 		<h1 class="h3">Rover GUI</h1>
 	</svelte:fragment>
 
-	<Tabs {layout} {selectedTabId} />
+	<Tabs {selectedTabId} />
 
 	<svelte:fragment slot="trail">
 		<Latency></Latency>
