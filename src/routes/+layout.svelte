@@ -26,5 +26,9 @@
 	initializeStores();
 </script>
 
+<svelte:head>
+	<title>Rover GUI</title>
+</svelte:head>
+
 <Toast />
 <slot />

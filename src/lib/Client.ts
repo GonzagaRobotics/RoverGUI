@@ -3,6 +3,8 @@ import { writable, type Writable } from 'svelte/store';
 import { PUBLIC_PREVIEW, PUBLIC_ROVER_URL } from '$env/static/public';
 import type { ToastStore } from '@skeletonlabs/skeleton';
 import ROSLIB from 'roslib';
+import { GamepadManager } from './input/GamepadManager';
+import { InputSystem } from './input/InputSystem';
 
 export type ClientConfig = {
 	/**
@@ -38,6 +40,8 @@ export class Client implements Disposable {
 	private _config: ClientConfig;
 	private _state: Writable<ClientState>;
 	private _ros: ROSLIB.Ros | null = null;
+	private _inputSystem: InputSystem;
+
 	private toastStore: ToastStore;
 
 	constructor(toastStore: ToastStore) {
@@ -85,12 +89,25 @@ export class Client implements Disposable {
 		} else {
 			this.setConnectionStatus(ClientConnectionStatus.Connected);
 		}
+
+		const gamepadManager = new GamepadManager();
+		this._inputSystem = new InputSystem(gamepadManager);
+
+		// Start ticking
+		window.requestAnimationFrame(this.tick.bind(this));
+	}
+
+	tick(): void {
+		this._inputSystem.tick(0);
+		window.requestAnimationFrame(this.tick.bind(this));
 	}
 
 	dispose(): void {
 		if (this._config.preview == false) {
 			this._ros!.close();
 		}
+
+		this._inputSystem.dispose();
 	}
 
 	/**
@@ -118,6 +135,13 @@ export class Client implements Disposable {
 	 */
 	get state(): Writable<ClientState> {
 		return this._state;
+	}
+
+	/**
+	 * Gets the client's input system.
+	 */
+	get inputSystem(): InputSystem {
+		return this._inputSystem;
 	}
 
 	private setConnectionStatus(status: ClientConnectionStatus): void {
