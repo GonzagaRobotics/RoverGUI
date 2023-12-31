@@ -1,6 +1,6 @@
 import type { Disposable, Tickable } from '$lib';
-import { get } from 'svelte/store';
-import type { GamepadManager } from './GamepadManager';
+import { derived, get, writable, type Readable, type Writable, readonly } from 'svelte/store';
+import { GamepadManager } from './GamepadManager';
 
 export type Button =
 	| 'A'
@@ -39,7 +39,6 @@ interface InputHandle {
 
 export interface ButtonHandle extends InputHandle {
 	button: Button;
-	callback: (pressed: boolean) => void;
 }
 
 export interface AxisHandle extends InputHandle {
@@ -50,19 +49,23 @@ export interface AxisHandle extends InputHandle {
 	deadzone?: number;
 	/** @default 1  */
 	curve?: number;
-	callback: (value: number) => void;
+}
+
+interface InternalInputHandle {
+	type: 'button' | 'axis';
+	handle: ButtonHandle | AxisHandle;
+	store: Writable<boolean> | Writable<number>;
 }
 
 export class InputSystem implements Disposable, Tickable {
 	private _gamepadManager: GamepadManager;
-	private _buttonHandles: ButtonHandle[] = [];
-	private _axisHandles: AxisHandle[] = [];
+	private _handles: InternalInputHandle[] = [];
 
 	private _gamepadState: GamepadState = DefaultGamepadState;
 	private _lastGamepadTimestamp: number = 0;
 
-	constructor(gamepadManager: GamepadManager) {
-		this._gamepadManager = gamepadManager;
+	constructor() {
+		this._gamepadManager = new GamepadManager();
 
 		// While it seems that the timestamp is consistent across a single
 		// gamepad, I don't think it's consistent across multiple gamepads.
@@ -74,30 +77,44 @@ export class InputSystem implements Disposable, Tickable {
 		});
 	}
 
-	registerButtonHandle(handle: ButtonHandle): boolean {
+	registerButtonHandle(handle: ButtonHandle): Readable<boolean> {
 		if (handle.id.trim() == '') {
-			return false;
+			throw new Error('Input handle ID cannot be empty.');
 		}
 
-		if (this._buttonHandles.some((h) => h.id == handle.id)) {
-			return false;
+		if (this._handles.some((h) => h.handle.id == handle.id)) {
+			throw new Error(`Input handle with ID ${handle.id} already exists.`);
 		}
 
-		this._buttonHandles.push(handle);
-		return true;
+		const store = writable(false);
+
+		this._handles.push({
+			type: 'button',
+			handle,
+			store
+		});
+
+		return readonly(store);
 	}
 
-	registerAxisHandle(handle: AxisHandle): boolean {
+	registerAxisHandle(handle: AxisHandle): Readable<number> {
 		if (handle.id.trim() == '') {
-			return false;
+			throw new Error('Input handle ID cannot be empty.');
 		}
 
-		if (this._axisHandles.some((h) => h.id == handle.id)) {
-			return false;
+		if (this._handles.some((h) => h.handle.id == handle.id)) {
+			throw new Error(`Input handle with ID ${handle.id} already exists.`);
 		}
 
-		this._axisHandles.push(handle);
-		return true;
+		const store = writable(0);
+
+		this._handles.push({
+			type: 'axis',
+			handle,
+			store
+		});
+
+		return readonly(store);
 	}
 
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -124,26 +141,27 @@ export class InputSystem implements Disposable, Tickable {
 		};
 
 		// Fire button callbacks
-		for (const handle of this._buttonHandles) {
-			const buttonIndex = this.mapButton(handle.button);
+		for (const handle of this._handles.filter((h) => h.type == 'button')) {
+			const buttonIndex = this.mapButton((handle.handle as ButtonHandle).button);
 
 			const previousPressed = previousState.buttons[buttonIndex] > 0.5;
 			const currentPressed = this._gamepadState.buttons[buttonIndex] > 0.5;
 
 			if (currentPressed != previousPressed) {
-				handle.callback(currentPressed);
+				(handle.store as Writable<boolean>).set(currentPressed);
 			}
 		}
 
 		// Fire axis callbacks
-		for (const handle of this._axisHandles) {
+		for (const handle of this._handles.filter((h) => h.type == 'axis')) {
+			const axisHandle = handle.handle as AxisHandle;
 			// If the axis is LT or RT, we need to get the value from the buttons array
 			// instead of the axes array
-			const isTrigger = handle.axis == 'LT' || handle.axis == 'RT';
+			const isTrigger = axisHandle.axis == 'LT' || axisHandle.axis == 'RT';
 
 			const axisIndex = isTrigger
-				? this.mapButton(handle.axis as Button)
-				: this.mapAxis(handle.axis);
+				? this.mapButton(axisHandle.axis as Button)
+				: this.mapAxis(axisHandle.axis);
 
 			const previousValue = isTrigger
 				? previousState.buttons[axisIndex]
@@ -155,7 +173,7 @@ export class InputSystem implements Disposable, Tickable {
 			// We're going to compare raw values, and only process them for the callback
 			// if they've changed
 			if (currentValue != previousValue) {
-				handle.callback(this.processAxisValue(currentValue, handle));
+				(handle.store as Writable<number>).set(this.processAxisValue(currentValue, axisHandle));
 			}
 		}
 
@@ -164,12 +182,7 @@ export class InputSystem implements Disposable, Tickable {
 
 	dispose(): void {
 		this._gamepadManager.dispose();
-		this._buttonHandles = [];
-		this._axisHandles = [];
-	}
-
-	getPriority(): number {
-		return 1;
+		this._handles = [];
 	}
 
 	private processAxisValue(value: number, handle: AxisHandle): number {
@@ -244,5 +257,9 @@ export class InputSystem implements Disposable, Tickable {
 			case 'RT':
 				throw new Error('LT and RT are not axes internally. Use the buttons array instead.');
 		}
+	}
+
+	get gamepadConnected(): Readable<boolean> {
+		return derived(this._gamepadManager.gamepad, (gamepad) => gamepad != null);
 	}
 }

@@ -12,11 +12,4 @@ export interface Disposable {
  */
 export interface Tickable {
 	tick(delta: number): void;
-
-	/**
-	 * Returns the priority of this tickable. Tickables with higher priority will be
-	 * ticked first. Tickables with the same priority will be ticked in an undefined
-	 * order. Priority defaults to 0, and can only be >= 0.
-	 */
-	getPriority(): number;
 }

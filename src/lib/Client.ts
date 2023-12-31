@@ -1,9 +1,8 @@
-import type { Disposable } from '$lib';
+import type { Disposable, Tickable } from '$lib';
 import { writable, type Writable } from 'svelte/store';
 import { PUBLIC_PREVIEW, PUBLIC_ROVER_URL } from '$env/static/public';
 import type { ToastStore } from '@skeletonlabs/skeleton';
-import ROSLIB from 'roslib';
-import { GamepadManager } from './input/GamepadManager';
+import { Ros } from 'roslib';
 import { InputSystem } from './input/InputSystem';
 
 export type ClientConfig = {
@@ -36,16 +35,15 @@ export type ClientState = {
 	dataReductionLevel: number;
 };
 
-export class Client implements Disposable {
+export class Client implements Disposable, Tickable {
 	private _config: ClientConfig;
 	private _state: Writable<ClientState>;
-	private _ros: ROSLIB.Ros | null = null;
+	private _ros: Ros;
 	private _inputSystem: InputSystem;
-
-	private toastStore: ToastStore;
+	private _toastStore: ToastStore;
 
 	constructor(toastStore: ToastStore) {
-		this.toastStore = toastStore;
+		this._toastStore = toastStore;
 
 		this._config = {
 			preview: PUBLIC_PREVIEW.toLowerCase() == 'true',
@@ -57,54 +55,43 @@ export class Client implements Disposable {
 			dataReductionLevel: DataReductionLevel.None
 		});
 
+		this._inputSystem = new InputSystem();
+
+		this._ros = new Ros({});
+
+		this._ros.on('connection', () => {
+			this.setConnectionStatus(ClientConnectionStatus.Connected);
+		});
+
+		this._ros.on('error', (e) => {
+			console.error('ROS error', e);
+
+			this._toastStore.trigger({
+				message: 'There was an error in ROS. Check the console for details.',
+				timeout: 3000,
+				background: 'variant-filled-error',
+				hideDismiss: true
+			});
+		});
+
+		this._ros.on('close', () => {
+			this.setConnectionStatus(ClientConnectionStatus.Disconnected);
+		});
+
 		if (this._config.preview == false) {
-			this._ros = new ROSLIB.Ros({
-				url: this._config.roverUrl
-			});
-
 			this.setConnectionStatus(ClientConnectionStatus.Connecting);
-
-			// ROS event handlers
-
-			this._ros.on('connection', () => {
-				this.setConnectionStatus(ClientConnectionStatus.Connected);
-			});
-
-			this._ros.on('error', (e) => {
-				this.setConnectionStatus(ClientConnectionStatus.Disconnected);
-
-				console.error('ROS error', e);
-
-				this.toastStore.trigger({
-					message: 'There was an error in ROS. Check the console for details.',
-					timeout: 3000,
-					background: 'variant-filled-error',
-					hideDismiss: true
-				});
-			});
-
-			this._ros.on('close', () => {
-				this.setConnectionStatus(ClientConnectionStatus.Disconnected);
-			});
 		} else {
 			this.setConnectionStatus(ClientConnectionStatus.Connected);
 		}
-
-		const gamepadManager = new GamepadManager();
-		this._inputSystem = new InputSystem(gamepadManager);
-
-		// Start ticking
-		window.requestAnimationFrame(this.tick.bind(this));
 	}
 
-	tick(): void {
-		this._inputSystem.tick(0);
-		window.requestAnimationFrame(this.tick.bind(this));
+	tick(delta: number): void {
+		this._inputSystem.tick(delta);
 	}
 
 	dispose(): void {
 		if (this._config.preview == false) {
-			this._ros!.close();
+			this._ros.close();
 		}
 
 		this._inputSystem.dispose();
@@ -112,15 +99,9 @@ export class Client implements Disposable {
 
 	/**
 	 * Gets the main ros instance.
-	 *
-	 * @throws {Error} If the client is in preview mode.
 	 */
 	get ros(): ROSLIB.Ros {
-		if (this._config.preview) {
-			throw new Error('Cannot get ROS instance in preview mode');
-		}
-
-		return this._ros!;
+		return this._ros;
 	}
 
 	/**
@@ -153,7 +134,7 @@ export class Client implements Disposable {
 		// Show a toast when the client connects or disconnects
 		if (status == ClientConnectionStatus.Connecting) return;
 
-		this.toastStore.trigger({
+		this._toastStore.trigger({
 			message:
 				status == ClientConnectionStatus.Connected
 					? 'Connected to rover'

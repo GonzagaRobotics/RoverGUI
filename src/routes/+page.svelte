@@ -11,7 +11,24 @@
 
 	let selectedTabId = writable<string>('drive');
 
+	let lastTickTimestamp: number | undefined;
+
+	function tick(timestamp: number) {
+		if (lastTickTimestamp == undefined) {
+			lastTickTimestamp = timestamp;
+		}
+
+		const delta = timestamp - lastTickTimestamp;
+
+		client.tick(delta / 1000);
+
+		lastTickTimestamp = timestamp;
+		requestAnimationFrame(tick);
+	}
+
 	onMount(() => {
+		requestAnimationFrame(tick);
+
 		// When the page is destroyed, we need to dispose of the client
 		return () => {
 			client.dispose();
