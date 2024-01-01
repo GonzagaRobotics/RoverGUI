@@ -10,14 +10,14 @@
 
 	const client = getContext<Client>('client');
 
-	const gpsStore = client.config.preview
-		? null
-		: readFromRover(client.ros, GPSMapping, GPSLoadingData);
-
-	$: loading = gpsStore != null && $gpsStore == null;
+	const gpsStore = readFromRover(client, GPSMapping, GPSLoadingData, {
+		latitude: 40.1106,
+		longitude: -89.2073,
+		heading: 60
+	});
 </script>
 
-<Pane {start} {end} name="Map" {loading}>
+<Pane {start} {end} name="Map" loading={$gpsStore == null}>
 	<svelte:fragment slot="main">
 		{#if gpsStore && $gpsStore}
 			Latitude: {$gpsStore.latitude} <br />

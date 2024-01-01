@@ -1,12 +1,20 @@
-import { Topic, type Ros } from 'roslib';
+import { Topic } from 'roslib';
 import type { RosMapping } from './RosMapping';
-import { derived, writable, type Readable } from 'svelte/store';
+import { derived, writable, type Readable, readable } from 'svelte/store';
+import type { Client } from '$lib/Client';
 
 export function readFromRover<T>(
-	ros: Ros,
+	client: Client,
 	mapping: RosMapping<T>,
-	loadingData: T
+	loadingData: T,
+	previewData?: T
 ): Readable<T | null> {
+	// If the client is in preview mode, we don't want to try to read from the
+	// rover (since we can't), so just return the preview or loading data
+	if (client.config.preview) {
+		return readable(previewData ?? loadingData);
+	}
+
 	// The topics we have received data from
 	const receivedTopics = new Set<string>();
 
@@ -28,23 +36,23 @@ export function readFromRover<T>(
 
 				// Subscribe to the topic
 				const subscriber = new Topic({
-					ros: ros,
+					ros: client.ros,
 					name: name,
 					messageType: type
 				});
 
 				subscriber.subscribe((msg) => {
 					// Update the store
-					update((prevData) => {
-						const newData = {
-							data: { ...prevData.data, [key]: msgToObj(msg) },
-							loading: prevData.loading
+					update((prevStore) => {
+						const newStore = {
+							data: { ...prevStore.data, [key]: msgToObj(msg) },
+							loading: prevStore.loading
 						};
 
 						// If we already finished loading, or we have already received data from this topic,
 						// we can just return the new data
-						if (prevData.loading == false || receivedTopics.has(key)) {
-							return newData;
+						if (prevStore.loading == false || receivedTopics.has(key)) {
+							return newStore;
 						}
 
 						// Otherwise, add the topic to the list of received topics
@@ -53,7 +61,7 @@ export function readFromRover<T>(
 						// If we have received data from all topics, we can stop loading
 						const allReceived = Object.keys(mapping).every((key) => receivedTopics.has(key));
 
-						return { data: newData.data, loading: !allReceived };
+						return { data: newStore.data, loading: !allReceived };
 					});
 				});
 			});
