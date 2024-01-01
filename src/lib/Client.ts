@@ -80,6 +80,7 @@ export class Client implements Disposable, Tickable {
 
 		if (this._config.preview == false) {
 			this.setConnectionStatus(ClientConnectionStatus.Connecting);
+			this._ros.connect(this._config.roverUrl);
 		} else {
 			this.setConnectionStatus(ClientConnectionStatus.Connected);
 		}

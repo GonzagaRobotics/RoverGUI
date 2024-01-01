@@ -23,7 +23,7 @@
 </script>
 
 {#key $gamepadConnected}
-	<div style="font-size: 2.25em;" in:scale={{ easing: backOut }}>
+	<div style="font-size: 2.25em;" in:scale={{ easing: backOut, start: 0.25 }}>
 		{#if $gamepadConnected}
 			<Controller></Controller>
 		{:else}
