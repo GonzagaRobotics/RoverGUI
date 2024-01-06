@@ -17,14 +17,14 @@
 	const gpsStore = readFromRover(client, GPSMapping, GPSLoadingData, {
 		latitude: 38.40629672161739,
 		longitude: -110.79178163652442,
-		heading: 60
+		heading: 135
 	});
 
 	let canvas: HTMLCanvasElement;
 	let internal: MapCanvas;
 
 	onMount(() => {
-		internal = new MapCanvas(canvas);
+		internal = new MapCanvas(canvas, gpsStore);
 	});
 </script>
 
