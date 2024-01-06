@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { AppShell, getToastStore } from '@skeletonlabs/skeleton';
+	import { getToastStore } from '@skeletonlabs/skeleton';
 	import AppBar from './appbar/AppBar.svelte';
 	import { Client } from '$lib/Client';
 	import { setContext, onMount } from 'svelte';
@@ -13,6 +13,8 @@
 
 	let lastTickTimestamp: number | undefined;
 
+	let tabComponent: Drive;
+
 	function tick(timestamp: number) {
 		if (lastTickTimestamp == undefined) {
 			lastTickTimestamp = timestamp;
@@ -21,6 +23,7 @@
 		const delta = timestamp - lastTickTimestamp;
 
 		client.tick(delta / 1000);
+		tabComponent.tick(delta / 1000);
 
 		lastTickTimestamp = timestamp;
 		requestAnimationFrame(tick);
@@ -36,7 +39,21 @@
 	});
 </script>
 
-<AppShell>
+<div class="w-full h-full flex flex-col">
+	<AppBar {selectedTabId} />
+
+	<main class="min-h-0 grow grid grid-cols-4 grid-rows-2 gap-1">
+		{#if $selectedTabId == 'drive'}
+			<Drive bind:this={tabComponent} />
+		{:else}
+			<div class="col-span-full row-span-full flex justify-center items-center">
+				<p class="h1">No Tab Selected</p>
+			</div>
+		{/if}
+	</main>
+</div>
+
+<!-- <AppShell>
 	<svelte:fragment slot="header">
 		<AppBar {selectedTabId} />
 	</svelte:fragment>
@@ -49,4 +66,4 @@
 			</div>
 		{/if}
 	</div>
-</AppShell>
+</AppShell> -->
