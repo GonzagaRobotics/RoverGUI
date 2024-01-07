@@ -1,8 +1,7 @@
 {
-	"prettier.documentSelectors": [
-		"**/*.svelte"
-	],
+	"prettier.documentSelectors": ["**/*.svelte"],
 	"tailwindCSS.classAttributes": [
+		// Skeleton
 		"class",
 		"accent",
 		"active",
@@ -113,6 +112,8 @@
 		"track",
 		"transition",
 		"width",
-		"zIndex"
+		"zIndex",
+		// Rover GUI
+		"containerClasses"
 	]
 }

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Map from '$lib/panes/map/Map.svelte';
-	import Motors from '$lib/panes/Motors.svelte';
+	import Motors from '$lib/panes/motors/Motors.svelte';
 	import View3D from '$lib/panes/view3d/View3D.svelte';
 
 	let map: Map;
