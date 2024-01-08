@@ -1,9 +1,10 @@
 import type { Disposable, Tickable } from '$lib';
 import { writable, type Writable } from 'svelte/store';
-import { PUBLIC_PREVIEW, PUBLIC_ROVER_URL } from '$env/static/public';
+import { PUBLIC_PREVIEW, PUBLIC_ROVER_URL, PUBLIC_SEND_RATE } from '$env/static/public';
 import type { ToastStore } from '@skeletonlabs/skeleton';
 import { Ros } from 'roslib';
 import { InputSystem } from './input/InputSystem';
+import { SendManager } from './comm/SendManager';
 
 export type ClientConfig = {
 	/**
@@ -13,6 +14,8 @@ export type ClientConfig = {
 	preview: boolean;
 	/** The URL of the rover. */
 	roverUrl: string;
+	/** How frequently data is sent to the rover (Hz). */
+	sendRate: number;
 };
 
 export enum ClientConnectionStatus {
@@ -40,6 +43,7 @@ export class Client implements Disposable, Tickable {
 	private _state: Writable<ClientState>;
 	private _ros: Ros;
 	private _inputSystem: InputSystem;
+	private _sendManager: SendManager;
 	private _toastStore: ToastStore;
 
 	constructor(toastStore: ToastStore) {
@@ -47,7 +51,8 @@ export class Client implements Disposable, Tickable {
 
 		this._config = {
 			preview: PUBLIC_PREVIEW.toLowerCase() == 'true',
-			roverUrl: PUBLIC_ROVER_URL
+			roverUrl: PUBLIC_ROVER_URL,
+			sendRate: Number.parseInt(PUBLIC_SEND_RATE)
 		};
 
 		this._state = writable<ClientState>({
@@ -56,6 +61,8 @@ export class Client implements Disposable, Tickable {
 		});
 
 		this._inputSystem = new InputSystem();
+
+		this._sendManager = new SendManager(this);
 
 		this._ros = new Ros({});
 
@@ -124,6 +131,13 @@ export class Client implements Disposable, Tickable {
 	 */
 	get inputSystem(): InputSystem {
 		return this._inputSystem;
+	}
+
+	/**
+	 * Gets the client's send manager.
+	 */
+	get sendManager(): SendManager {
+		return this._sendManager;
 	}
 
 	private setConnectionStatus(status: ClientConnectionStatus): void {
