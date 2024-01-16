@@ -12,9 +12,9 @@
 <div style="font-size: 2em;">
 	{#if $clientState.connectionStatus == ClientConnectionStatus.Disconnected}
 		<Disconnected class="text-warning-500"></Disconnected>
-	{:else if $clientState.connectionStatus == ClientConnectionStatus.Connecting}
-		<Connecting class="animate-pulse-fast"></Connecting>
-	{:else}
+	{:else if $clientState.connectionStatus == ClientConnectionStatus.Connected}
 		<Connected class="text-success-500"></Connected>
+	{:else}
+		<Connecting class="animate-pulse-fast"></Connecting>
 	{/if}
 </div>

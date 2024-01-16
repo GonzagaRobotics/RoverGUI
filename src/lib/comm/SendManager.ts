@@ -61,7 +61,7 @@ export class SendManager implements Tickable {
 
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	tick(delta: number): void {
-		console.log(this.sendQueue.length);
+		// console.log(this.sendQueue.length);
 
 		// If we're in preview mode, don't send anything
 		if (this.client.config.preview) {
@@ -74,14 +74,11 @@ export class SendManager implements Tickable {
 		}
 
 		// Send all messages in the queue
-		for (let i = this.sendQueue.length - 1; i >= 0; i--) {
-			const { topic, msg } = this.sendQueue[i];
+		while (this.sendQueue.length > 0) {
+			const { topic, msg } = this.sendQueue.pop()!;
 
 			// Send the message
 			topic.publish(msg);
-
-			// Remove the message from the queue
-			this.sendQueue.splice(i, 1);
 		}
 
 		// Update the last send time
