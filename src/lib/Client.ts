@@ -91,9 +91,9 @@ export class Client implements Disposable, Tickable {
 
 		this.sendManager = new SendManager(this);
 
-		this.heartbeat = new Heartbeat(this);
-
 		this.ros = new Ros({});
+
+		this.heartbeat = new Heartbeat(this);
 
 		this.ros.on('connection', async () => {
 			// Send the shared config to the rover
@@ -162,9 +162,16 @@ export class Client implements Disposable, Tickable {
 		});
 
 		return new Promise<boolean>((resolve) => {
-			service.callService(this.sharedConfig, (result) => {
-				resolve(result);
-			});
+			service.callService(
+				{
+					heartbeat_interval: this.sharedConfig.heartbeatInterval,
+					heartbeat_timeout: this.sharedConfig.heartbeatTimeout,
+					heartbeat_fail_limit: this.sharedConfig.heartbeatFailLimit
+				},
+				(result) => {
+					resolve(result);
+				}
+			);
 		});
 	}
 

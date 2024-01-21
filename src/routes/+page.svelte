@@ -24,7 +24,7 @@
 		const delta = timestamp - lastTickTimestamp;
 
 		client.tick(delta / 1000);
-		tabComponent.tick(delta / 1000);
+		tabComponent?.tick(delta / 1000);
 
 		lastTickTimestamp = timestamp;
 		requestAnimationFrame(tick);
@@ -44,7 +44,11 @@
 	<AppBar {selectedTabId} />
 
 	<main class="min-h-0 grow grid grid-cols-4 grid-rows-2 gap-1">
-		{#if $clientState.connectionStatus == ClientConnectionStatus.SharingConfigs}
+		{#if $clientState.connectionStatus == ClientConnectionStatus.Connecting}
+			<div class="col-span-full row-span-full flex justify-center items-center">
+				<p class="h1">Connecting...</p>
+			</div>
+		{:else if $clientState.connectionStatus == ClientConnectionStatus.SharingConfigs}
 			<div class="col-span-full row-span-full flex justify-center items-center">
 				<p class="h1">Sending Configs to Rover...</p>
 			</div>

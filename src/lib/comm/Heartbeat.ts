@@ -5,13 +5,14 @@ import { get, writable, type Readable } from 'svelte/store';
 
 export class Heartbeat implements Tickable, Disposable {
 	private client: Client;
-	private heartbeatTopic: Topic | undefined;
+	private heartbeatPubTopic: Topic | undefined;
+	private heartbeatSubTopic: Topic | undefined;
 
 	private sendTime = -1;
 	private receiveTime = -1;
 	private _latency = writable<number | undefined>(undefined);
 	private sentSkipWarning = false;
-	private retryCount = 0;
+	private failCount = 0;
 
 	constructor(client: Client) {
 		this.client = client;
@@ -20,14 +21,20 @@ export class Heartbeat implements Tickable, Disposable {
 			return;
 		}
 
-		this.heartbeatTopic = new Topic({
-			name: '/heartbeat',
+		this.heartbeatPubTopic = new Topic({
+			name: '/heartbeat/rover',
 			messageType: 'std_msgs/Empty',
 			ros: client.ros
 		});
-		this.heartbeatTopic.advertise();
+		this.heartbeatPubTopic.advertise();
 
-		this.heartbeatTopic.subscribe(this.receiveHeartbeat);
+		this.heartbeatSubTopic = new Topic({
+			name: '/heartbeat/client',
+			messageType: 'std_msgs/Empty',
+			ros: client.ros
+		});
+
+		this.heartbeatSubTopic.subscribe(() => this.receiveHeartbeat());
 	}
 
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -49,9 +56,20 @@ export class Heartbeat implements Tickable, Disposable {
 		}
 
 		// See if we've timed out
-		if (Date.now() - this.sendTime >= this.client.sharedConfig.heartbeatTimeout * 1000) {
+		// The interval we're checking at is much faster than the timeout, so we need to adjust
+		// the sent time to account for that based on the number of fails
+
+		const adjustedSendTime =
+			this.sendTime + this.failCount * this.client.sharedConfig.heartbeatInterval * 1000;
+
+		if (Date.now() - adjustedSendTime >= this.client.sharedConfig.heartbeatTimeout * 1000) {
+			this.failCount++;
+			console.log('timeout ' + this.failCount);
+
 			// See if we've reached the fail limit
-			if (this.retryCount == this.client.sharedConfig.heartbeatFailLimit - 1) {
+			if (this.failCount > this.client.sharedConfig.heartbeatFailLimit) {
+				console.log('connection lost');
+
 				this.client.toastStore.trigger({
 					message: 'The connection to the server has been lost.',
 					timeout: 3000,
@@ -63,17 +81,12 @@ export class Heartbeat implements Tickable, Disposable {
 				return;
 			}
 
-			// If this is the first time we've timed out, warn the user
-			if (this.retryCount == 0) {
-				this.client.toastStore.trigger({
-					message: 'A heartbeat has timed out. Retrying...',
-					timeout: 1500,
-					background: 'variant-filled-warning',
-					hideDismiss: true
-				});
-			}
-
-			this.retryCount++;
+			this.client.toastStore.trigger({
+				message: 'A heartbeat has timed out. Retrying...',
+				timeout: 1500,
+				background: 'variant-filled-warning',
+				hideDismiss: true
+			});
 		}
 
 		// Send a heartbeat on the interval
@@ -83,6 +96,8 @@ export class Heartbeat implements Tickable, Disposable {
 				// If this is the first time we've skipped a heartbeat, warn the user
 				if (this.sentSkipWarning == false) {
 					this.sentSkipWarning = true;
+
+					console.log('skip warning');
 
 					this.client.toastStore.trigger({
 						message:
@@ -101,19 +116,23 @@ export class Heartbeat implements Tickable, Disposable {
 	}
 
 	dispose(): void {
-		this.heartbeatTopic?.unadvertise();
+		this.heartbeatPubTopic?.unadvertise();
 	}
 
 	private sendHeartbeat(): void {
+		console.log('Sending heartbeat');
+
 		this.sendTime = Date.now();
 		this.receiveTime = -1;
 
-		this.heartbeatTopic!.publish({});
+		this.heartbeatPubTopic!.publish({});
 	}
 
 	private receiveHeartbeat(): void {
+		return;
+		console.log('Received heartbeat');
 		this.sentSkipWarning = false;
-		this.retryCount = 0;
+		this.failCount = 0;
 
 		this.receiveTime = Date.now();
 

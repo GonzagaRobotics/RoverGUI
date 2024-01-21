@@ -23,8 +23,15 @@
 	let canvas: HTMLCanvasElement;
 	let internal: MapCanvas;
 
-	onMount(() => {
+	$: if (canvas) {
+		internal?.dispose();
 		internal = new MapCanvas(canvas, gpsStore);
+	}
+
+	onMount(() => {
+		return () => {
+			internal?.dispose();
+		};
 	});
 </script>
 
