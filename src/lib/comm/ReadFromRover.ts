@@ -36,7 +36,7 @@ export function readFromRover<T>(
 
 				// Subscribe to the topic
 				const subscriber = new Topic({
-					ros: client.ros,
+					ros: client.ros.internal!,
 					name: name,
 					messageType: type
 				});

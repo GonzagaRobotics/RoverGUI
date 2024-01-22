@@ -9,10 +9,11 @@ import {
 	PUBLIC_SEND_RATE
 } from '$env/static/public';
 import type { ToastStore } from '@skeletonlabs/skeleton';
-import { Ros, Service } from 'roslib';
+import { Service } from 'roslib';
 import { InputSystem } from './input/InputSystem';
 import { SendManager } from './comm/SendManager';
 import { Heartbeat } from './comm/Heartbeat';
+import { ClientRos } from './comm/core/ClientRos';
 
 export type ClientConfig = {
 	/**
@@ -54,13 +55,15 @@ export type ClientState = {
 	connectionStatus: ClientConnectionStatus;
 	/** The level of data reduction. */
 	dataReductionLevel: number;
+	/** Current round-trip latency from client to rover. */
+	latency?: number;
 };
 
 export class Client implements Disposable, Tickable {
 	readonly config: ClientConfig;
 	readonly sharedConfig: SharedConfig;
 	readonly state: Writable<ClientState>;
-	readonly ros: Ros;
+	readonly ros: ClientRos;
 	readonly inputSystem: InputSystem;
 	readonly sendManager: SendManager;
 	readonly heartbeat: Heartbeat;
@@ -91,7 +94,7 @@ export class Client implements Disposable, Tickable {
 
 		this.sendManager = new SendManager(this);
 
-		this.ros = new Ros({});
+		this.ros = new ClientRos(this.config);
 
 		this.heartbeat = new Heartbeat(this);
 
@@ -103,7 +106,7 @@ export class Client implements Disposable, Tickable {
 
 			if (result == false) {
 				console.error('Failed to send shared config to rover');
-				this.ros.close();
+				this.ros.disconnect();
 				return;
 			}
 
@@ -127,7 +130,7 @@ export class Client implements Disposable, Tickable {
 
 		if (this.config.preview == false) {
 			this.setConnectionStatus(ClientConnectionStatus.Connecting);
-			this.ros.connect(this.config.roverUrl);
+			this.ros.connect();
 		} else {
 			this.setConnectionStatus(ClientConnectionStatus.Connected);
 		}
@@ -140,23 +143,19 @@ export class Client implements Disposable, Tickable {
 	}
 
 	dispose(): void {
-		if (this.config.preview == false) {
-			this.ros.close();
-		}
+		this.ros.disconnect();
 
 		this.inputSystem.dispose();
 		this.heartbeat.dispose();
 	}
 
-	forceDisconnect(): void {
-		if (this.config.preview == false) {
-			this.ros.close();
-		}
-	}
-
 	private async sendSharedConfig(): Promise<boolean> {
+		if (this.config.preview) {
+			return true;
+		}
+
 		const service = new Service({
-			ros: this.ros,
+			ros: this.ros.internal!,
 			name: '/shared_config',
 			serviceType: 'rcs_interfaces/SharedConfig'
 		});

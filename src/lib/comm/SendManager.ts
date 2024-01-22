@@ -2,24 +2,20 @@ import type { Tickable } from '$lib';
 import type { Client } from '$lib/Client';
 import type { Writable } from 'svelte/store';
 import type { RosMapping } from './RosMapping';
-import { Topic, type Message } from 'roslib';
+import { type Message } from 'roslib';
+import { ClientRosTopic } from './core/ClientRosTopic';
 
 export class SendManager implements Tickable {
 	private client: Client;
 	private lastSendTime: number = 0;
 
-	private sendQueue: { topic: Topic; msg: Message }[] = [];
+	private sendQueue: { topic: ClientRosTopic; msg: Message }[] = [];
 
 	constructor(client: Client) {
 		this.client = client;
 	}
 
 	registerSender<T>(mapping: RosMapping<T>, store: Writable<T | undefined>): void {
-		// If we're in preview mode, don't send anything
-		if (this.client.config.preview) {
-			return;
-		}
-
 		// Create topics from the mapping
 		Object.keys(mapping).forEach((key) => {
 			const { name, type, objToMsg } = mapping[key as keyof T];
@@ -30,11 +26,7 @@ export class SendManager implements Tickable {
 			}
 
 			// Create the topic
-			const topic = new Topic({
-				ros: this.client.ros,
-				name: name,
-				messageType: type
-			});
+			const topic = new ClientRosTopic(name, type, this.client.ros);
 
 			// Subscribe to the store
 			store.subscribe((data) => {
@@ -43,13 +35,14 @@ export class SendManager implements Tickable {
 					return;
 				}
 
-				// The store can change mutliple times before the next tick,
-				// and we only care about the last change, so we nned to clear
-				// any messages in the queue for this topic if they exist
-				this.sendQueue.splice(
-					this.sendQueue.findIndex((item) => item.topic.name == topic.name),
-					1
-				);
+				// Replace the message in the queue if it exists
+				const existingIndex = this.sendQueue.findIndex((item) => item.topic.name == topic.name);
+
+				if (existingIndex != -1) {
+					this.sendQueue[existingIndex].msg = objToMsg(data[key as keyof T]);
+
+					return;
+				}
 
 				this.sendQueue.push({
 					topic: topic,
@@ -61,23 +54,14 @@ export class SendManager implements Tickable {
 
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	tick(delta: number): void {
-		// console.log(this.sendQueue.length);
-
-		// If we're in preview mode, don't send anything
-		if (this.client.config.preview) {
-			return;
-		}
-
 		// If we haven't waited long enough, don't send anything
 		if (this.lastSendTime + 1000 / this.client.config.sendRate > Date.now()) {
 			return;
 		}
 
-		// Send all messages in the queue
 		while (this.sendQueue.length > 0) {
 			const { topic, msg } = this.sendQueue.pop()!;
 
-			// Send the message
 			topic.publish(msg);
 		}
 
