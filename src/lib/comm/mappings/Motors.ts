@@ -6,6 +6,10 @@ export type Motors = {
 };
 
 export const MotorsMapping: RosMapping<Motors> = {
-	left: { name: 'motors/left', type: 'std_msgs/Float32', objToMsg: simpleObjToMsg },
-	right: { name: 'motors/right', type: 'std_msgs/Float32', objToMsg: simpleObjToMsg }
+	left: { name: '/motor_command/left_motor', type: 'std_msgs/Float32', objToMsg: simpleObjToMsg },
+	right: {
+		name: '/motor_command/right_motor',
+		type: 'std_msgs/Float32',
+		objToMsg: simpleObjToMsg
+	}
 };
