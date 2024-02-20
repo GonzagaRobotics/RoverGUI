@@ -1,6 +1,6 @@
 # Rover GUI
 
-Primary GUI for using the rover. Uses SvelteKit, Typescript, and roslibjs.
+Primary GUI for using the rover. Uses SvelteKit, Skeleton, Typescript, and roslibjs.
 
 ## Compatibility
 
@@ -12,7 +12,7 @@ There are known, potentially breaking issues with Linux, although the GUI can st
 
 1. Make sure Node.js and npm are installed.
 2. Run `npm install` to install dependencies.
-3. Copy `.env.example` to `.env` and change the values to match your setup.
+3. Duplicate `.env.example`, rename it to `.env` and change the values to match your setup.
 4. Run `npm run dev` to start the dev server.
 5. Navigate to `http://localhost:5173/`
 

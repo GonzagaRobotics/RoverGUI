@@ -1,42 +1,63 @@
 <script lang="ts">
-	import '../styles/app.css';
-	import Navbar from './navbar/Navbar.svelte';
-	import { WindowLayoutParser, type WindowLayout, type Tab } from '$lib/data/WindowLayoutParser';
-	import { onMount } from 'svelte';
-	import Window from './Window.svelte';
-	import Settings from './settings/Settings.svelte';
+	import { getToastStore } from '@skeletonlabs/skeleton';
+	import AppBar from './appbar/AppBar.svelte';
+	import { Client, ClientConnectionStatus } from '$lib/Client';
+	import { setContext, onMount } from 'svelte';
+	import { writable } from 'svelte/store';
+	import Drive from '$lib/tabs/Drive.svelte';
 
-	let layoutData: WindowLayout | undefined = undefined;
-	let selectedTab: Tab | undefined = undefined;
+	const client = new Client(getToastStore());
+	setContext('client', client);
+	const clientState = client.state;
 
-	let showSettings = false;
+	let selectedTabId = writable<string>('drive');
 
-	function handleTabChange(e: any) {
-		const tabId = e.detail;
-		selectedTab = layoutData?.tabs.find((tab) => tab.uuid == tabId);
-	}
+	let lastTickTimestamp: number | undefined;
 
-	async function loadWindowLayout() {
-		const layoutRes = await fetch('/window-layout-data.json');
+	let tabComponent: Drive;
 
-		layoutData = WindowLayoutParser.parse(await layoutRes.text());
+	function tick(timestamp: number) {
+		if (lastTickTimestamp == undefined) {
+			lastTickTimestamp = timestamp;
+		}
 
-		selectedTab = layoutData.tabs.length == 0 ? undefined : layoutData.tabs[0];
+		const delta = timestamp - lastTickTimestamp;
+
+		client.tick(delta / 1000);
+		tabComponent?.tick(delta / 1000);
+
+		lastTickTimestamp = timestamp;
+		requestAnimationFrame(tick);
 	}
 
 	onMount(() => {
-		loadWindowLayout();
+		requestAnimationFrame(tick);
+
+		// When the page is destroyed, we need to dispose of the client
+		return () => {
+			client.dispose();
+		};
 	});
 </script>
 
-<Settings bind:showSettings />
+<div class="w-full h-full flex flex-col">
+	<AppBar {selectedTabId} />
 
-{#if layoutData}
-	<Navbar
-		{layoutData}
-		selectedTabId={selectedTab?.uuid}
-		on:click={handleTabChange}
-		on:open-settings={() => (showSettings = true)}
-	/>
-	<Window {layoutData} {selectedTab} />
-{/if}
+	<main class="min-h-0 grow grid grid-cols-4 grid-rows-2 gap-1">
+		{#if $clientState.connectionStatus == ClientConnectionStatus.Connecting}
+			<div class="col-span-full row-span-full flex justify-center items-center">
+				<p class="h1">Connecting...</p>
+			</div>
+		{:else if $clientState.connectionStatus == ClientConnectionStatus.SharingConfigs}
+			<div class="col-span-full row-span-full flex justify-center items-center">
+				<p class="h1">Sending Configs to Rover...</p>
+			</div>
+		{:else if $selectedTabId == 'drive'}
+			<Drive bind:this={tabComponent} />
+		{:else}
+			<div class="col-span-full row-span-full flex justify-center items-center">
+				<p class="h1">No Tab Selected</p>
+			</div>
+		{/if}
+	</main>
+</div>
