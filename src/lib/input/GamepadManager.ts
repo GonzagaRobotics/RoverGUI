@@ -1,5 +1,8 @@
 import type { Disposable } from '$lib';
 import { get, writable, type Writable } from 'svelte/store';
+import { LinuxMapper } from './LinuxMapper';
+import type { OSMapper } from './OSMapper';
+import { WinMapper } from './WinMapper';
 
 export class GamepadManager implements Disposable {
 	private _gamepad = writable<Gamepad | null>(null);
@@ -16,7 +19,7 @@ export class GamepadManager implements Disposable {
 			}
 
 			if (this.isGamepadSupported(e.gamepad) == false) {
-				console.warn(`|GamepadManager| Attempted to connect an unsupported gamepad: ${e.gamepad}`);
+				console.warn('|GamepadManager| Attempted to connect an unsupported gamepad', e.gamepad);
 
 				return;
 			}
@@ -47,13 +50,22 @@ export class GamepadManager implements Disposable {
 		return { subscribe: this._gamepad.subscribe };
 	}
 
-	private isGamepadSupported(gamepad: Gamepad): boolean {
-		// Currently, only XInput gamepads are supported using the standard layout
-		if (gamepad.mapping != 'standard') {
-			return false;
+	getMapper(): OSMapper {
+		if (navigator.userAgent.includes('Linux')) {
+			return new LinuxMapper();
 		}
 
-		if (gamepad.id.toLowerCase() != 'xinput') {
+		return new WinMapper();
+	}
+
+	private isGamepadSupported(gamepad: Gamepad): boolean {
+		// XInput gamepads are supported using the standard layout, but we also
+		// hack in support for our controller on Linux
+		if (gamepad.mapping == '' && navigator.userAgent.includes('Linux')) {
+			return true;
+		}
+
+		if (gamepad.mapping != 'standard' || gamepad.id.toLowerCase() != 'xinput') {
 			return false;
 		}
 

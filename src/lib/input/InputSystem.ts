@@ -1,6 +1,7 @@
 import type { Disposable, Tickable } from '$lib';
 import { derived, get, writable, type Readable, type Writable, readonly } from 'svelte/store';
 import { GamepadManager } from './GamepadManager';
+import type { OSMapper } from './OSMapper';
 
 export type Button =
 	| 'A'
@@ -23,17 +24,12 @@ export type Button =
 
 export type Axis = 'LX' | 'LY' | 'RX' | 'RY' | 'LT' | 'RT';
 
-type GamepadState = {
+export type GamepadState = {
 	buttons: number[];
 	axes: number[];
 };
 
-const DefaultGamepadState: GamepadState = {
-	buttons: Array(17).fill(0),
-	axes: Array(4).fill(0)
-};
-
-interface InputHandle {
+export interface InputHandle {
 	id: string;
 }
 
@@ -51,7 +47,7 @@ export interface AxisHandle extends InputHandle {
 	curve?: number;
 }
 
-interface InternalInputHandle {
+export interface InternalInputHandle {
 	type: 'button' | 'axis';
 	handle: ButtonHandle | AxisHandle;
 	store: Writable<boolean> | Writable<number>;
@@ -61,7 +57,7 @@ export class InputSystem implements Disposable, Tickable {
 	private _gamepadManager: GamepadManager;
 	private _handles: InternalInputHandle[] = [];
 
-	private _gamepadState: GamepadState = DefaultGamepadState;
+	private _mapper: OSMapper | null = null;
 	private _lastGamepadTimestamp: number = 0;
 
 	constructor() {
@@ -73,6 +69,8 @@ export class InputSystem implements Disposable, Tickable {
 		this._gamepadManager.gamepad.subscribe((gamepad) => {
 			if (gamepad == null) {
 				this._lastGamepadTimestamp = 0;
+			} else {
+				this._mapper = this._gamepadManager.getMapper();
 			}
 		});
 	}
@@ -117,15 +115,14 @@ export class InputSystem implements Disposable, Tickable {
 		return readonly(store);
 	}
 
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	tick(delta: number): void {
+	tick(): void {
 		const gamepad = get(this._gamepadManager.gamepad);
 
-		if (gamepad == null) {
+		if (gamepad == null || this._mapper == null) {
 			return;
 		}
 
-		// We can use the timestamp to determine if the gamepad has been updated
+		// We can use the timestamp to determ_gamepadStateine if the gamepad has been updated
 		// since the last tick
 		if (gamepad.timestamp == this._lastGamepadTimestamp) {
 			return;
@@ -133,49 +130,20 @@ export class InputSystem implements Disposable, Tickable {
 
 		// We know that something has changed, so now we need to compare the
 		// current state to the previous state and fire any callbacks
-		const previousState = this._gamepadState;
+		const previousState = this._mapper.gamepadState;
 
-		this._gamepadState = {
+		this._mapper.gamepadState = {
 			buttons: gamepad.buttons.map((b) => b.value),
 			axes: gamepad.axes.map((a) => a)
 		};
 
 		// Fire button callbacks
-		for (const handle of this._handles.filter((h) => h.type == 'button')) {
-			const buttonIndex = this.mapButton((handle.handle as ButtonHandle).button);
-
-			const previousPressed = previousState.buttons[buttonIndex] > 0.5;
-			const currentPressed = this._gamepadState.buttons[buttonIndex] > 0.5;
-
-			if (currentPressed != previousPressed) {
-				(handle.store as Writable<boolean>).set(currentPressed);
-			}
-		}
+		const buttonHandles = this._handles.filter((h) => h.type == 'button');
+		this._mapper.callButtonHandles(previousState, buttonHandles);
 
 		// Fire axis callbacks
-		for (const handle of this._handles.filter((h) => h.type == 'axis')) {
-			const axisHandle = handle.handle as AxisHandle;
-			// If the axis is LT or RT, we need to get the value from the buttons array
-			// instead of the axes array
-			const isTrigger = axisHandle.axis == 'LT' || axisHandle.axis == 'RT';
-
-			const axisIndex = isTrigger
-				? this.mapButton(axisHandle.axis as Button)
-				: this.mapAxis(axisHandle.axis);
-
-			const previousValue = isTrigger
-				? previousState.buttons[axisIndex]
-				: previousState.axes[axisIndex];
-			const currentValue = isTrigger
-				? this._gamepadState.buttons[axisIndex]
-				: this._gamepadState.axes[axisIndex];
-
-			// We're going to compare raw values, and only process them for the callback
-			// if they've changed
-			if (currentValue != previousValue) {
-				(handle.store as Writable<number>).set(this.processAxisValue(currentValue, axisHandle));
-			}
-		}
+		const axisHandles = this._handles.filter((h) => h.type == 'axis');
+		this._mapper.callAxisHandles(previousState, axisHandles, this.processAxisValue.bind(this));
 
 		this._lastGamepadTimestamp = gamepad.timestamp;
 	}
@@ -200,63 +168,6 @@ export class InputSystem implements Disposable, Tickable {
 		}
 
 		return value;
-	}
-
-	private mapButton(button: Button): number {
-		switch (button) {
-			case 'A':
-				return 0;
-			case 'B':
-				return 1;
-			case 'X':
-				return 2;
-			case 'Y':
-				return 3;
-			case 'LB':
-				return 4;
-			case 'RB':
-				return 5;
-			case 'LT':
-				return 6;
-			case 'RT':
-				return 7;
-			case 'Back':
-				return 8;
-			case 'Center':
-				return 16;
-			case 'Start':
-				return 9;
-			case 'LS':
-				return 10;
-			case 'RS':
-				return 11;
-			case 'Up':
-				return 12;
-			case 'Down':
-				return 13;
-			case 'Left':
-				return 14;
-			case 'Right':
-				return 15;
-		}
-	}
-
-	private mapAxis(axis: Axis): number {
-		switch (axis) {
-			case 'LX':
-				return 0;
-			case 'LY':
-				return 1;
-			case 'RX':
-				return 2;
-			case 'RY':
-				return 3;
-			// LT and RT are not actually axes, so we'll throw an error to make sure
-			// that we are getting them from the buttons array
-			case 'LT':
-			case 'RT':
-				throw new Error('LT and RT are not axes internally. Use the buttons array instead.');
-		}
 	}
 
 	get gamepadConnected(): Readable<boolean> {
