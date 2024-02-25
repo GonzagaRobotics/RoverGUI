@@ -5,6 +5,8 @@
 	import { setContext, onMount } from 'svelte';
 	import { writable } from 'svelte/store';
 	import Drive from '$lib/tabs/Drive.svelte';
+	import AutoNav from '$lib/tabs/AutoNav.svelte';
+	import { beforeNavigate } from '$app/navigation';
 
 	const client = new Client(getToastStore());
 	setContext('client', client);
@@ -14,7 +16,7 @@
 
 	let lastTickTimestamp: number | undefined;
 
-	let tabComponent: Drive;
+	let tabComponent: Drive | AutoNav;
 
 	function tick(timestamp: number) {
 		if (lastTickTimestamp == undefined) {
@@ -30,13 +32,15 @@
 		requestAnimationFrame(tick);
 	}
 
+	beforeNavigate((navigation) => {
+		// When the page is destroyed, we need to dispose of the client
+		if (navigation.type == 'leave') {
+			client.dispose();
+		}
+	});
+
 	onMount(() => {
 		requestAnimationFrame(tick);
-
-		// When the page is destroyed, we need to dispose of the client
-		return () => {
-			client.dispose();
-		};
 	});
 </script>
 
@@ -48,16 +52,12 @@
 			<div class="col-span-full row-span-full flex justify-center items-center">
 				<p class="h1">Connecting...</p>
 			</div>
-		{:else if $clientState.connectionStatus == ClientConnectionStatus.SharingConfigs}
-			<div class="col-span-full row-span-full flex justify-center items-center">
-				<p class="h1">Sending Configs to Rover...</p>
-			</div>
-		{:else if $selectedTabId == 'drive'}
-			<Drive bind:this={tabComponent} />
-		{:else}
-			<div class="col-span-full row-span-full flex justify-center items-center">
-				<p class="h1">No Tab Selected</p>
-			</div>
+		{:else if $clientState.connectionStatus == ClientConnectionStatus.Connected}
+			{#if $selectedTabId == 'drive'}
+				<Drive bind:this={tabComponent} />
+			{:else if $selectedTabId == 'auto-nav'}
+				<AutoNav bind:this={tabComponent} />
+			{/if}
 		{/if}
 	</main>
 </div>

@@ -52,16 +52,18 @@ export class GamepadManager implements Disposable {
 
 	getMapper(): OSMapper {
 		if (navigator.userAgent.includes('Linux')) {
-			return new LinuxMapper();
+			return new WinMapper();
 		}
 
 		return new WinMapper();
 	}
 
 	private isGamepadSupported(gamepad: Gamepad): boolean {
+		console.log(gamepad);
+
 		// XInput gamepads are supported using the standard layout, but we also
 		// hack in support for our controller on Linux
-		if (gamepad.mapping == '' && navigator.userAgent.includes('Linux')) {
+		if (navigator.userAgent.includes('Linux')) {
 			return true;
 		}
 

@@ -1,19 +1,19 @@
 import type { Disposable, Tickable } from '$lib';
 import { writable, type Writable } from 'svelte/store';
 import {
-	PUBLIC_HEARTBEAT_FAIL_LIMIT,
 	PUBLIC_HEARTBEAT_INTERVAL,
 	PUBLIC_HEARTBEAT_TIMEOUT,
+	PUBLIC_HEARTBEAT_TIMEOUT_LIMIT,
 	PUBLIC_PREVIEW,
 	PUBLIC_ROVER_URL,
 	PUBLIC_SEND_RATE
 } from '$env/static/public';
 import type { ToastStore } from '@skeletonlabs/skeleton';
-import { Service } from 'roslib';
 import { InputSystem } from './input/InputSystem';
 import { SendManager } from './comm/SendManager';
 import { Heartbeat } from './comm/Heartbeat';
 import { ClientRos } from './comm/core/ClientRos';
+import { ClientRosTopic } from './comm/core/ClientRosTopic';
 
 export type ClientConfig = {
 	/**
@@ -25,21 +25,17 @@ export type ClientConfig = {
 	roverUrl: string;
 	/** How frequently data is sent to the rover (Hz). */
 	sendRate: number;
-};
-
-export type SharedConfig = {
-	/** How long between each heartbeat the client sends to the rover (in seconds). */
+	/** How long between each heartbeat the client sends to the rover (seconds). */
 	heartbeatInterval: number;
-	/** How long to wait for a heartbeat response from the rover (in seconds). */
+	/** How long between heartbeats before it's considered a timeout (seconds). */
 	heartbeatTimeout: number;
-	/** How many times to retry a heartbeat before giving up. */
-	heartbeatFailLimit: number;
+	/** How many timeouts before the connection is considered lost. */
+	heartbeatTimeoutLimit: number;
 };
 
 export enum ClientConnectionStatus {
 	Disconnected,
 	Connecting,
-	SharingConfigs,
 	Connected
 }
 
@@ -61,13 +57,13 @@ export type ClientState = {
 
 export class Client implements Disposable, Tickable {
 	readonly config: ClientConfig;
-	readonly sharedConfig: SharedConfig;
 	readonly state: Writable<ClientState>;
 	readonly ros: ClientRos;
 	readonly inputSystem: InputSystem;
 	readonly sendManager: SendManager;
 	readonly heartbeat: Heartbeat;
-
+	readonly confirmStartTopic: ClientRosTopic;
+	readonly confirmStopTopic: ClientRosTopic;
 	readonly toastStore: ToastStore;
 
 	constructor(toastStore: ToastStore) {
@@ -76,13 +72,10 @@ export class Client implements Disposable, Tickable {
 		this.config = {
 			preview: PUBLIC_PREVIEW.toLowerCase() == 'true',
 			roverUrl: PUBLIC_ROVER_URL,
-			sendRate: Number.parseInt(PUBLIC_SEND_RATE)
-		};
-
-		this.sharedConfig = {
+			sendRate: Number.parseInt(PUBLIC_SEND_RATE),
 			heartbeatInterval: Number.parseFloat(PUBLIC_HEARTBEAT_INTERVAL),
 			heartbeatTimeout: Number.parseFloat(PUBLIC_HEARTBEAT_TIMEOUT),
-			heartbeatFailLimit: Number.parseInt(PUBLIC_HEARTBEAT_FAIL_LIMIT)
+			heartbeatTimeoutLimit: Number.parseInt(PUBLIC_HEARTBEAT_TIMEOUT_LIMIT)
 		};
 
 		this.state = writable<ClientState>({
@@ -98,17 +91,22 @@ export class Client implements Disposable, Tickable {
 
 		this.heartbeat = new Heartbeat(this);
 
+		this.confirmStartTopic = new ClientRosTopic(
+			'/confirm_start',
+			'rcs_interfaces/ConfirmStart',
+			this.ros
+		);
+		this.confirmStartTopic.advertise();
+
+		this.confirmStopTopic = new ClientRosTopic(
+			'/confirm_stop',
+			'rcs_interfaces/ConfirmStop',
+			this.ros
+		);
+		this.confirmStopTopic.advertise();
+
 		this.ros.on('connection', async () => {
-			// Send the shared config to the rover
-			this.setConnectionStatus(ClientConnectionStatus.SharingConfigs);
-
-			const result = await this.sendSharedConfig();
-
-			if (result == false) {
-				console.error('Failed to send shared config to rover');
-				this.ros.disconnect();
-				return;
-			}
+			this.sendConfirmStart();
 
 			this.setConnectionStatus(ClientConnectionStatus.Connected);
 		});
@@ -137,41 +135,30 @@ export class Client implements Disposable, Tickable {
 	}
 
 	tick(delta: number): void {
-		this.heartbeat.tick(delta);
-		this.inputSystem.tick(delta);
+		this.heartbeat.tick();
+		this.inputSystem.tick();
 		this.sendManager.tick(delta);
 	}
 
 	dispose(): void {
+		this.sendConfirmStop();
+
 		this.ros.disconnect();
 
 		this.inputSystem.dispose();
 		this.heartbeat.dispose();
 	}
 
-	private async sendSharedConfig(): Promise<boolean> {
-		if (this.config.preview) {
-			return true;
-		}
-
-		const service = new Service({
-			ros: this.ros.internal!,
-			name: '/shared_config',
-			serviceType: 'rcs_interfaces/SharedConfig'
+	private sendConfirmStart() {
+		this.confirmStartTopic.publish({
+			heartbeat_interval: this.config.heartbeatInterval,
+			heartbeat_timeout: this.config.heartbeatTimeout,
+			heartbeat_timeout_limit: this.config.heartbeatTimeoutLimit
 		});
+	}
 
-		return new Promise<boolean>((resolve) => {
-			service.callService(
-				{
-					heartbeat_interval: this.sharedConfig.heartbeatInterval,
-					heartbeat_timeout: this.sharedConfig.heartbeatTimeout,
-					heartbeat_fail_limit: this.sharedConfig.heartbeatFailLimit
-				},
-				(result) => {
-					resolve(result);
-				}
-			);
-		});
+	private sendConfirmStop() {
+		this.confirmStopTopic.publish({});
 	}
 
 	private setConnectionStatus(status: ClientConnectionStatus): void {

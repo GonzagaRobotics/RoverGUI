@@ -67,6 +67,8 @@ export function readFromRover<T>(
 			});
 
 			return () => {
+				console.log('Unsubscribing from topics');
+
 				// Unsubscribe from all topics
 				unsubscribers.forEach((unsubscribe) => unsubscribe());
 			};

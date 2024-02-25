@@ -1,7 +1,7 @@
 <script lang="ts">
 	import DPadUp from '~icons/mdi/gamepad-round-up';
 
-	import { getContext } from 'svelte';
+	import { getContext, onDestroy } from 'svelte';
 	import Pane from '../Pane.svelte';
 	import { Client } from '$lib/Client';
 	import Arrow from './Arrow.svelte';
@@ -55,6 +55,12 @@
 	$: outputStore.set({
 		left: leftOutput,
 		right: rightOutput
+	});
+
+	onDestroy(() => {
+		client.inputSystem.deregisterHandle('motors_vertical');
+		client.inputSystem.deregisterHandle('motors_horizontal');
+		client.inputSystem.deregisterHandle('motors_reset');
 	});
 </script>
 

@@ -115,6 +115,14 @@ export class InputSystem implements Disposable, Tickable {
 		return readonly(store);
 	}
 
+	deregisterHandle(id: string): void {
+		const index = this._handles.findIndex((h) => h.handle.id == id);
+
+		if (index != -1) {
+			this._handles.splice(index, 1);
+		}
+	}
+
 	tick(): void {
 		const gamepad = get(this._gamepadManager.gamepad);
 

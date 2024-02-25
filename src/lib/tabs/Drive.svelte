@@ -13,7 +13,7 @@
 	}
 </script>
 
-<View3D bind:this={view3d} start={{ x: 1, y: 1 }} end={{ x: 3, y: 2 }} />
+<!-- <View3D bind:this={view3d} start={{ x: 1, y: 1 }} end={{ x: 3, y: 2 }} /> -->
 <Motors start={{ x: 3, y: 1 }} end={{ x: 4, y: 2 }} />
-<Map bind:this={map} start={{ x: 4, y: 1 }} end={{ x: 5, y: 2 }} />
-<Camera start={{ x: 1, y: 2 }} end={{ x: 3, y: 3 }} />
+<!-- <Map bind:this={map} start={{ x: 4, y: 1 }} end={{ x: 5, y: 2 }} /> -->
+<Camera start={{ x: 1, y: 1 }} end={{ x: 3, y: 2 }} />

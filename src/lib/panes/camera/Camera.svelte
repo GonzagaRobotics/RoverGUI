@@ -1,33 +1,32 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { getContext } from 'svelte';
 	import Pane from '../Pane.svelte';
+	import type { Client } from '$lib/Client';
+	import { readFromRover } from '$lib/comm/ReadFromRover';
+	import { CameraMapping } from '$lib/comm/mappings/CameraImage';
 
 	export let start: { x: number; y: number };
 	export let end: { x: number; y: number };
 
-	const imgUrl = new URL('/camera-placeholder.png', import.meta.url).href;
+	const client = getContext<Client>('client');
 
-	let canvas: HTMLCanvasElement;
+	let cameraStore = readFromRover(client, CameraMapping, null, null);
 
-	onMount(() => {
-		const ctx = canvas.getContext('2d')!;
+	let image: HTMLImageElement;
 
-		const img = new Image();
-		img.src = imgUrl;
-
-		img.onload = () => {
-			ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-		};
-	});
+	$: if (image) {
+		image.src = `data:image/jpeg;base64,${$cameraStore?.image.data}`;
+	}
 </script>
 
 <Pane
 	{start}
 	{end}
 	name="Camera"
+	loading={$cameraStore == null}
 	containerClasses="flex justify-center items-center overflow-hidden"
 >
 	<svelte:fragment slot="main">
-		<canvas bind:this={canvas} width="800" height="600" class="max-w-full max-h-full"></canvas>
+		<img bind:this={image} width="640" height="480" alt="" />
 	</svelte:fragment>
 </Pane>
