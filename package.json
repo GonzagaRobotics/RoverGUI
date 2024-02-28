@@ -1,6 +1,6 @@
 {
 	"name": "rover-gui",
-	"version": "0.9.0",
+	"version": "0.10.0",
 	"private": true,
 	"scripts": {
 		"dev": "vite dev",
@@ -19,7 +19,7 @@
 		"@sveltejs/adapter-auto": "^3.0.0",
 		"@sveltejs/kit": "^2.0.0",
 		"@sveltejs/vite-plugin-svelte": "^3.0.0",
-		"@tailwindcss/forms": "0.5.7",
+		"@tailwindcss/forms": "^0.5.7",
 		"@tailwindcss/typography": "0.5.10",
 		"@types/node": "20.10.4",
 		"@typescript-eslint/eslint-plugin": "^6.0.0",
