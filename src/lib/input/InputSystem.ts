@@ -124,11 +124,13 @@ export class InputSystem implements Disposable, Tickable {
 	}
 
 	tick(): void {
-		const gamepad = get(this._gamepadManager.gamepad);
+		const gamepadIndex = get(this._gamepadManager.gamepad);
 
-		if (gamepad == null || this._mapper == null) {
+		if (gamepadIndex == null || this._mapper == null) {
 			return;
 		}
+
+		const gamepad = navigator.getGamepads()[gamepadIndex]!;
 
 		// We can use the timestamp to determ_gamepadStateine if the gamepad has been updated
 		// since the last tick

@@ -1,11 +1,10 @@
 import type { Disposable } from '$lib';
-import { get, writable, type Writable } from 'svelte/store';
-import { LinuxMapper } from './LinuxMapper';
+import { get, writable } from 'svelte/store';
 import type { OSMapper } from './OSMapper';
 import { WinMapper } from './WinMapper';
 
 export class GamepadManager implements Disposable {
-	private _gamepad = writable<Gamepad | null>(null);
+	private _gamepad = writable<number | null>(null);
 
 	constructor() {
 		window.addEventListener('gamepadconnected', (e) => {
@@ -30,7 +29,7 @@ export class GamepadManager implements Disposable {
 
 			// For some reason, VSCode is thinking that this._gamepad is the "never" type
 			// Even though it's clearly a Writable<Gamepad | null>
-			(this._gamepad as Writable<Gamepad | null>).set(e.gamepad);
+			this._gamepad.set(e.gamepad.index);
 		});
 
 		window.addEventListener('gamepaddisconnected', (e) => {
@@ -51,23 +50,11 @@ export class GamepadManager implements Disposable {
 	}
 
 	getMapper(): OSMapper {
-		if (navigator.userAgent.includes('Linux')) {
-			return new WinMapper();
-		}
-
 		return new WinMapper();
 	}
 
 	private isGamepadSupported(gamepad: Gamepad): boolean {
-		console.log(gamepad);
-
-		// XInput gamepads are supported using the standard layout, but we also
-		// hack in support for our controller on Linux
-		if (navigator.userAgent.includes('Linux')) {
-			return true;
-		}
-
-		if (gamepad.mapping != 'standard' || gamepad.id.toLowerCase() != 'xinput') {
+		if (gamepad.mapping != 'standard') {
 			return false;
 		}
 
