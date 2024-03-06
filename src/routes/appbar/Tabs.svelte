@@ -5,8 +5,7 @@
 	export let selectedTabId: Writable<string>;
 
 	const tabs = [
-		{ id: 'drive', name: 'Drive' },
-		{ id: 'auto-nav', name: 'Auto Nav' }
+		{ id: 'arm', name: 'Arm' }
 	];
 </script>
 

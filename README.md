@@ -4,9 +4,9 @@ Primary GUI for using the rover. Uses SvelteKit, Skeleton, Typescript, and rosli
 
 ## Compatibility
 
-Development and testing is done on Windows 10/11 Firefox. Other modern browsers should work fine, but there may be subtle issues.
+Development and testing is done on Ubuntu Chromium. Compatability with Windows Chromium (Chrome, Edge, etc) is also expected.
 
-There are known, potentially breaking issues with Linux, although the GUI can still connect to the rover.
+Other browsers and MacOS are known to have issues with the GUI and are not supported.
 
 ## Quick Start
 

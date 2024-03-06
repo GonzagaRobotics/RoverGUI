@@ -11,9 +11,7 @@ import {
 import type { ToastStore } from '@skeletonlabs/skeleton';
 import { InputSystem } from './input/InputSystem';
 import { SendManager } from './comm/SendManager';
-import { Heartbeat } from './comm/Heartbeat';
 import { ClientRos } from './comm/core/ClientRos';
-import { ClientRosTopic } from './comm/core/ClientRosTopic';
 
 export type ClientConfig = {
 	/**
@@ -61,9 +59,6 @@ export class Client implements Disposable, Tickable {
 	readonly ros: ClientRos;
 	readonly inputSystem: InputSystem;
 	readonly sendManager: SendManager;
-	readonly heartbeat: Heartbeat;
-	readonly confirmStartTopic: ClientRosTopic;
-	readonly confirmStopTopic: ClientRosTopic;
 	readonly toastStore: ToastStore;
 
 	constructor(toastStore: ToastStore) {
@@ -89,25 +84,7 @@ export class Client implements Disposable, Tickable {
 
 		this.ros = new ClientRos(this.config);
 
-		this.heartbeat = new Heartbeat(this);
-
-		this.confirmStartTopic = new ClientRosTopic(
-			'/confirm_start',
-			'rcs_interfaces/ConfirmStart',
-			this.ros
-		);
-		this.confirmStartTopic.advertise();
-
-		this.confirmStopTopic = new ClientRosTopic(
-			'/confirm_stop',
-			'rcs_interfaces/ConfirmStop',
-			this.ros
-		);
-		this.confirmStopTopic.advertise();
-
 		this.ros.on('connection', async () => {
-			this.sendConfirmStart();
-
 			this.setConnectionStatus(ClientConnectionStatus.Connected);
 		});
 
@@ -135,30 +112,14 @@ export class Client implements Disposable, Tickable {
 	}
 
 	tick(delta: number): void {
-		this.heartbeat.tick();
 		this.inputSystem.tick();
 		this.sendManager.tick(delta);
 	}
 
 	dispose(): void {
-		this.sendConfirmStop();
-
 		this.ros.disconnect();
 
 		this.inputSystem.dispose();
-		this.heartbeat.dispose();
-	}
-
-	private sendConfirmStart() {
-		this.confirmStartTopic.publish({
-			heartbeat_interval: this.config.heartbeatInterval,
-			heartbeat_timeout: this.config.heartbeatTimeout,
-			heartbeat_timeout_limit: this.config.heartbeatTimeoutLimit
-		});
-	}
-
-	private sendConfirmStop() {
-		this.confirmStopTopic.publish({});
 	}
 
 	private setConnectionStatus(status: ClientConnectionStatus): void {

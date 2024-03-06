@@ -7,16 +7,17 @@
 	import Drive from '$lib/tabs/Drive.svelte';
 	import AutoNav from '$lib/tabs/AutoNav.svelte';
 	import { beforeNavigate } from '$app/navigation';
+	import Arm from '$lib/tabs/Arm.svelte';
 
 	const client = new Client(getToastStore());
 	setContext('client', client);
 	const clientState = client.state;
 
-	let selectedTabId = writable<string>('auto-nav');
+	let selectedTabId = writable<string>('arm');
 
 	let lastTickTimestamp: number | undefined;
 
-	let tabComponent: Drive | AutoNav;
+	let tabComponent: Drive | AutoNav | Arm;
 
 	function tick(timestamp: number) {
 		if (lastTickTimestamp == undefined) {
@@ -57,6 +58,8 @@
 				<Drive bind:this={tabComponent} />
 			{:else if $selectedTabId == 'auto-nav'}
 				<AutoNav bind:this={tabComponent} />
+			{:else if $selectedTabId == 'arm'}
+				<Arm bind:this={tabComponent}></Arm>
 			{/if}
 		{/if}
 	</main>
