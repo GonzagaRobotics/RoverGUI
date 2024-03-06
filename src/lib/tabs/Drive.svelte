@@ -6,14 +6,19 @@
 
 	let map: Map;
 	let view3d: View3D;
+	let camera: Camera;
 
 	export function tick(delta: number) {
 		map?.tick(delta);
 		view3d?.tick(delta);
+	}
+
+	export function dispose() {
+		camera?.dispose();
 	}
 </script>
 
 <!-- <View3D bind:this={view3d} start={{ x: 1, y: 1 }} end={{ x: 3, y: 2 }} /> -->
 <Motors start={{ x: 3, y: 1 }} end={{ x: 4, y: 2 }} />
 <!-- <Map bind:this={map} start={{ x: 4, y: 1 }} end={{ x: 5, y: 2 }} /> -->
-<Camera start={{ x: 1, y: 1 }} end={{ x: 3, y: 2 }} />
+<Camera bind:this={camera} start={{ x: 1, y: 1 }} end={{ x: 3, y: 2 }} />
